@@ -1,0 +1,10 @@
+{
+  "/api": {
+    "target": "https://miner.noxiousgaming.eu/api",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api": ""
+    }
+  }
+}

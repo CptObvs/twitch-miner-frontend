@@ -1,0 +1,99 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-twitch: #9146ff;
+  --color-twitch-dark: #7c3aed;
+  --color-twitch-light: #a78bfa;
+  --color-twitch-glow: #9146ff80;
+}
+
+/* Custom Scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 #1f2937;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #1f2937;
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Custom Animations */
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 10px var(--color-twitch-glow),
+      0 0 20px var(--color-twitch-glow);
+  }
+  50% {
+    box-shadow:
+      0 0 20px var(--color-twitch-glow),
+      0 0 30px var(--color-twitch-glow);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(-2px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-glow {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+.animate-slide-in {
+  animation: slide-in 0.2s ease-out;
+}
+
+/* Glass Effect */
+.glass {
+  background: rgba(17, 24, 39, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Gradient Text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-twitch), var(--color-twitch-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
