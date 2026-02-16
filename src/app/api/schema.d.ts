@@ -395,6 +395,9 @@ export interface paths {
      *     While shutting down, the instance status is STOPPING (visible to
      *     other requests, e.g. from a second browser tab).
      *     The response is returned only once the instance is fully STOPPED.
+     *
+     *     This endpoint is idempotent - calling it on an already stopped
+     *     instance will return 200 with STOPPED status.
      */
     post: operations['stop_instance_instances__instance_id__stop_post'];
     delete?: never;
@@ -570,6 +573,10 @@ export interface components {
       last_started_at?: string | null;
       /** Last Stopped At */
       last_stopped_at?: string | null;
+      /** Activation Url */
+      activation_url?: string | null;
+      /** Activation Code */
+      activation_code?: string | null;
     };
     /**
      * InstanceState
@@ -584,6 +591,10 @@ export interface components {
       status: components['schemas']['InstanceState'];
       /** Pid */
       pid?: number | null;
+      /** Activation Url */
+      activation_url?: string | null;
+      /** Activation Code */
+      activation_code?: string | null;
     };
     /** RegisterRequest */
     RegisterRequest: {
@@ -1297,7 +1308,10 @@ export interface operations {
   };
   stream_logs_instances__instance_id__logs_get: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description Wie viele Logzeilen initial laden? Leer = komplette Datei */
+        history_lines?: number | null;
+      };
       header?: never;
       path: {
         instance_id: string;

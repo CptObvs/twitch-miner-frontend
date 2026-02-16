@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import type { components } from '../../api/schema';
 import { AuthService } from '../../core/auth/auth.service';
@@ -21,7 +20,6 @@ type Instance = components['schemas']['InstanceResponse'];
 })
 export class DashboardComponent {
   private readonly auth = inject(AuthService);
-  private readonly router = inject(Router);
   private readonly instancesService = inject(InstancesService);
   private readonly adminService = inject(AdminService);
   readonly isAdmin = this.auth.isAdmin;
@@ -30,7 +28,6 @@ export class DashboardComponent {
   loading = signal(false);
   error = signal('');
   showCreate = signal(false);
-  showFirstStartHint = signal<string | null>(null);
 
   /** Track which instance IDs have an action in progress */
   private actionLoadingIds = signal(new Set<string>());
@@ -101,9 +98,6 @@ export class DashboardComponent {
   startInstance(id: string) {
     if (this.isActionLoading(id)) return;
 
-    const inst = this.instances().find((i) => i.id === id);
-    const isFirstStart = inst && !inst.last_started_at;
-
     executeActionWithId$(
       this.instancesService.startInstance$(id),
       id,
@@ -111,9 +105,6 @@ export class DashboardComponent {
       (updated) => {
         if (updated) {
           this.instances.update((list) => list.map((item) => (item.id === id ? updated : item)));
-          if (isFirstStart) {
-            this.showFirstStartHint.set(id);
-          }
         } else {
           this.loadInstances();
         }
@@ -122,17 +113,13 @@ export class DashboardComponent {
     );
   }
 
-  dismissHint() {
-    this.showFirstStartHint.set(null);
-  }
-
-  goToInstanceLogs(id: string) {
-    this.showFirstStartHint.set(null);
-    this.router.navigate(['/instances', id]);
-  }
-
   stopInstance(id: string) {
     if (this.isActionLoading(id)) return;
+
+    // Optimistically update status to stopping
+    this.instances.update((list) =>
+      list.map((item) => (item.id === id ? { ...item, status: 'stopping' as const } : item)),
+    );
 
     // The stop endpoint blocks until the instance is fully stopped
     executeActionWithId$(
@@ -175,6 +162,24 @@ export class DashboardComponent {
       this.actionLoadingIds,
       () => {
         this.instances.update((list) => list.filter((inst) => inst.id !== id));
+      },
+      () => this.loadInstances(),
+    );
+  }
+
+  saveStreamers(id: string, streamers: string[]) {
+    if (this.isActionLoading(id)) return;
+
+    executeActionWithId$(
+      this.instancesService.updateStreamers$(id, streamers),
+      id,
+      this.actionLoadingIds,
+      (updated) => {
+        if (updated) {
+          this.instances.update((list) => list.map((item) => (item.id === id ? updated : item)));
+        } else {
+          this.loadInstances();
+        }
       },
       () => this.loadInstances(),
     );

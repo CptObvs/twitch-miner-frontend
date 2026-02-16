@@ -1,148 +1,416 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  computed,
   DestroyRef,
-  ElementRef,
   inject,
   input,
+  NgZone,
   signal,
   viewChild,
 } from '@angular/core';
+import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
 import { AuthService } from '../../core/auth/auth.service';
 import { API_BASE_URL } from '../../api/config';
+import { LogLineItem } from './log-line-item';
+import { LogStats, LogStatsSummary } from './log-stats';
+import { DisplayLogLine, extractDateKey, formatLogLine } from './log-line-formatter';
+
+/** Pixel threshold to consider the viewport "at the bottom" */
+const SCROLL_BOTTOM_THRESHOLD = 48;
+
+/** Maximum number of lines kept in compact (dashboard) mode */
+const MAX_COMPACT_LINES = 100;
+
+/** Reconnect configuration */
+const RECONNECT_BASE_DELAY_MS = 1_000;
+const RECONNECT_MAX_DELAY_MS = 30_000;
+const RECONNECT_MAX_ATTEMPTS = 10;
+
+type LogFilter = 'all' | 'points' | 'drops' | 'prediction' | 'warnings' | 'errors';
+
+type DateFilter = 'all' | string;
 
 @Component({
   selector: 'app-log-viewer',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
-      <div class="mb-3 flex items-center justify-between">
-        <h3 class="text-sm font-semibold text-gray-300">Logs</h3>
-        <div class="flex gap-2">
-          @if (connected()) {
-            <button
-              (click)="disconnect()"
-              class="rounded-lg bg-red-900/50 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-900"
-            >
-              Disconnect
-            </button>
-          } @else {
-            <button
-              (click)="connect()"
-              class="rounded-lg bg-green-900/50 px-3 py-1.5 text-xs font-medium text-green-300 hover:bg-green-900"
-            >
-              Connect
-            </button>
-          }
-          <button
-            (click)="clearLogs()"
-            class="rounded-lg bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-400 hover:bg-gray-700"
-          >
-            Clear
-          </button>
-        </div>
-      </div>
-
-      <div
-        #logContainer
-        class="h-80 overflow-y-auto rounded-lg bg-black p-3 font-mono text-xs leading-relaxed text-green-400"
-      >
-        @for (line of lines(); track $index) {
-          <div>{{ line }}</div>
-        }
-        @if (lines().length === 0) {
-          <div class="text-gray-600">
-            @if (connected()) {
-              Waiting for logs...
-            } @else {
-              Click "Connect" to start streaming logs.
-            }
-          </div>
-        }
-      </div>
-    </div>
-  `,
+  imports: [ScrollingModule, LogLineItem, LogStats],
+  templateUrl: './log-viewer.html',
+  styleUrl: './log-viewer.css',
 })
 export class LogViewer {
-  private auth = inject(AuthService);
-  private destroyRef = inject(DestroyRef);
-  private logContainer = viewChild<ElementRef<HTMLDivElement>>('logContainer');
+  private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly zone = inject(NgZone);
+  private readonly viewport = viewChild(CdkVirtualScrollViewport);
+
+  readonly maxReconnectAttempts = RECONNECT_MAX_ATTEMPTS;
 
   instanceId = input.required<string>();
 
+  /** When true, renders as a collapsible section with auto-connect */
+  compact = input(false);
+
+  /** All buffered log lines */
   lines = signal<string[]>([]);
+  hasConnectedOnce = signal(false);
+  displayLines = computed(() => this.lines().map((line) => formatLogLine(line)));
+  activeDateFilter = signal<DateFilter>('all');
+  availableDateFilters = computed(() => {
+    const unique = new Set<string>();
+    for (const rawLine of this.lines()) {
+      const dateKey = extractDateKey(rawLine);
+      if (dateKey) {
+        unique.add(dateKey);
+      }
+    }
+    return Array.from(unique).sort((a, b) => b.localeCompare(a));
+  });
+  activeFilter = signal<LogFilter>('all');
+  searchQuery = signal('');
+  filteredDisplayLines = computed(() => {
+    const rawLines = this.lines();
+    const query = this.searchQuery().trim().toLowerCase();
+
+    return this.displayLines().filter((line, index) => {
+      const matchesDate = this.matchesDateFilter(rawLines[index] ?? '');
+      if (!matchesDate) return false;
+
+      const matchesFilter = this.matchesFilter(line);
+      if (!matchesFilter) return false;
+
+      if (!query) return true;
+      return line.text.toLowerCase().includes(query);
+    });
+  });
+  filteredLineCount = computed(() => this.filteredDisplayLines().length);
+  hasActiveFilter = computed(
+    () =>
+      this.activeFilter() !== 'all' ||
+      this.activeDateFilter() !== 'all' ||
+      this.searchQuery().trim().length > 0,
+  );
+  lineCount = computed(() => this.lines().length);
+  statsSummary = computed<LogStatsSummary>(() => {
+    let points = 0;
+    let drops = 0;
+
+    for (const rawLine of this.lines()) {
+      const formatted = formatLogLine(rawLine);
+
+      const pointMatch = formatted.text.match(/\+(\d+)\b/);
+      if (pointMatch) {
+        points += Number(pointMatch[1]);
+      }
+
+      if (formatted.tone === 'drop' && /(?:📦\s*)?DROP claim\s*•/i.test(formatted.text)) {
+        drops += 1;
+      }
+    }
+
+    return {
+      points,
+      drops,
+    };
+  });
+
   connected = signal(false);
+  reconnecting = signal(false);
+  reconnectAttempt = signal(0);
+
+  /** Whether the viewport is pinned to the bottom */
+  autoScroll = signal(true);
+
+  /** Whether the compact view is expanded */
+  expanded = signal(false);
 
   private abortController: AbortController | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private intentionalDisconnect = false;
+  private pendingLines: string[] = [];
+  private flushRafId: number | null = null;
+
+  /** Incomplete SSE chunk from previous read */
+  private partialChunk = '';
 
   ngOnInit() {
-    this.destroyRef.onDestroy(() => this.disconnect());
+    this.destroyRef.onDestroy(() => {
+      this.intentionalDisconnect = true;
+      this.disconnect();
+      this.cancelReconnect();
+      if (this.flushRafId !== null) {
+        cancelAnimationFrame(this.flushRafId);
+      }
+    });
   }
+
+  // ---------------------------------------------------------------------------
+  // Connection management
+  // ---------------------------------------------------------------------------
 
   connect() {
     this.disconnect();
+    this.cancelReconnect();
+    this.clearLogs();
+    this.hasConnectedOnce.set(true);
+    this.intentionalDisconnect = false;
+    this.reconnectAttempt.set(0);
+    this.reconnecting.set(false);
+    this.startStream();
+  }
+
+  disconnect() {
+    this.intentionalDisconnect = true;
+    this.abortController?.abort();
+    this.abortController = null;
+    this.connected.set(false);
+    this.reconnecting.set(false);
+    this.partialChunk = '';
+  }
+
+  clearLogs() {
+    this.lines.set([]);
+    this.pendingLines = [];
+    this.autoScroll.set(true);
+  }
+
+  jumpToBottom() {
+    this.autoScroll.set(true);
+    this.scrollToEnd();
+  }
+
+  /** Toggle expanded state (compact mode). Auto-connects on first expand. */
+  onToggle() {
+    const wasExpanded = this.expanded();
+    this.expanded.set(!wasExpanded);
+
+    if (!wasExpanded) {
+      // Opening — auto-connect if not already connected
+      if (!this.connected()) {
+        this.connect();
+      }
+    } else {
+      // Closing — disconnect to free resources
+      this.disconnect();
+      this.clearLogs();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Scroll tracking
+  // ---------------------------------------------------------------------------
+
+  onScrollIndexChange() {
+    const vp = this.viewport();
+    if (!vp) return;
+    const el = vp.elementRef.nativeElement;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < SCROLL_BOTTOM_THRESHOLD;
+    this.autoScroll.set(atBottom);
+  }
+
+  trackByIndex(index: number): number {
+    return index;
+  }
+
+  onFilterChange(event: Event) {
+    const value = (event.target as HTMLSelectElement).value as LogFilter;
+    this.activeFilter.set(value);
+  }
+
+  onDateFilterChange(event: Event) {
+    const value = (event.target as HTMLSelectElement).value as DateFilter;
+    this.activeDateFilter.set(value);
+  }
+
+  onSearchInput(event: Event) {
+    const value = (event.target as HTMLInputElement).value;
+    this.searchQuery.set(value);
+  }
+
+  // ---------------------------------------------------------------------------
+  // SSE stream with reconnect
+  // ---------------------------------------------------------------------------
+
+  private startStream() {
     const token = this.auth.getToken();
     if (!token) return;
 
     this.abortController = new AbortController();
     this.connected.set(true);
+    this.partialChunk = '';
 
-    const baseUrl = API_BASE_URL;
-    const url = `${baseUrl}/instances/${this.instanceId()}/logs`;
-    fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: this.abortController.signal,
-    })
-      .then((res) => {
-        if (!res.ok || !res.body) {
-          this.connected.set(false);
-          return;
-        }
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        const read = (): void => {
-          reader
-            .read()
-            .then(({ done, value }) => {
-              if (done) {
-                this.connected.set(false);
-                return;
-              }
-              const text = decoder.decode(value, { stream: true });
-              const newLines = text
-                .split('\n')
-                .filter((l) => l.startsWith('data: '))
-                .map((l) => l.slice(6));
-              if (newLines.length > 0) {
-                this.lines.update((prev) => {
-                  const combined = [...prev, ...newLines];
-                  return combined.length > 1000 ? combined.slice(-1000) : combined;
-                });
-                this.scrollToBottom();
-              }
-              read();
-            })
-            .catch(() => this.connected.set(false));
-        };
-        read();
+    const params = new URLSearchParams();
+    if (this.compact()) {
+      params.set('history_lines', String(MAX_COMPACT_LINES));
+    }
+    const query = params.toString();
+    const url = `${API_BASE_URL}/instances/${this.instanceId()}/logs${query ? `?${query}` : ''}`;
+
+    // Run fetch outside Angular zone to avoid unnecessary CD cycles
+    this.zone.runOutsideAngular(() => {
+      fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: this.abortController!.signal,
       })
-      .catch(() => this.connected.set(false));
-  }
-
-  disconnect() {
-    this.abortController?.abort();
-    this.abortController = null;
-    this.connected.set(false);
-  }
-
-  clearLogs() {
-    this.lines.set([]);
-  }
-
-  private scrollToBottom() {
-    requestAnimationFrame(() => {
-      const el = this.logContainer()?.nativeElement;
-      if (el) el.scrollTop = el.scrollHeight;
+        .then((res) => {
+          if (!res.ok || !res.body) {
+            this.zone.run(() => this.handleStreamEnd());
+            return;
+          }
+          this.readStream(res.body.getReader());
+        })
+        .catch((err) => {
+          if ((err as DOMException)?.name === 'AbortError') return;
+          this.zone.run(() => this.handleStreamEnd());
+        });
     });
+  }
+
+  private readStream(reader: ReadableStreamDefaultReader<Uint8Array>) {
+    const decoder = new TextDecoder();
+
+    const read = (): void => {
+      reader
+        .read()
+        .then(({ done, value }) => {
+          if (done) {
+            this.zone.run(() => this.handleStreamEnd());
+            return;
+          }
+          const text = this.partialChunk + decoder.decode(value, { stream: true });
+          const segments = text.split('\n');
+          // Last segment may be incomplete — keep it for the next chunk
+          this.partialChunk = segments.pop() ?? '';
+
+          const newLines = segments.filter((l) => l.startsWith('data: ')).map((l) => l.slice(6));
+
+          if (newLines.length > 0) {
+            this.pendingLines.push(...newLines);
+            this.scheduleFlush();
+          }
+          read();
+        })
+        .catch((err) => {
+          if ((err as DOMException)?.name === 'AbortError') return;
+          this.zone.run(() => this.handleStreamEnd());
+        });
+    };
+
+    read();
+  }
+
+  /**
+   * Batch incoming lines into a single rAF frame to coalesce rapid updates
+   * and reduce change-detection runs.
+   */
+  private scheduleFlush() {
+    if (this.flushRafId !== null) return;
+    this.flushRafId = requestAnimationFrame(() => {
+      this.flushRafId = null;
+      const batch = this.pendingLines.splice(0);
+      if (batch.length === 0) return;
+
+      this.zone.run(() => {
+        this.lines.update((prev) => {
+          const combined = prev.concat(batch);
+          if (!this.compact()) {
+            return combined;
+          }
+          return combined.length > MAX_COMPACT_LINES
+            ? combined.slice(-MAX_COMPACT_LINES)
+            : combined;
+        });
+
+        if (this.autoScroll()) {
+          this.scrollToEnd();
+        }
+      });
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Reconnection with exponential back-off
+  // ---------------------------------------------------------------------------
+
+  private handleStreamEnd() {
+    this.connected.set(false);
+    if (this.intentionalDisconnect) {
+      this.reconnecting.set(false);
+      return;
+    }
+    this.scheduleReconnect();
+  }
+
+  private scheduleReconnect() {
+    const attempt = this.reconnectAttempt() + 1;
+    if (attempt > RECONNECT_MAX_ATTEMPTS) {
+      this.reconnecting.set(false);
+      return;
+    }
+
+    this.reconnectAttempt.set(attempt);
+    this.reconnecting.set(true);
+
+    const delay = Math.min(
+      RECONNECT_BASE_DELAY_MS * Math.pow(2, attempt - 1),
+      RECONNECT_MAX_DELAY_MS,
+    );
+
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.intentionalDisconnect = false;
+      this.startStream();
+    }, delay);
+  }
+
+  private cancelReconnect() {
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.reconnecting.set(false);
+    this.reconnectAttempt.set(0);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+
+  private scrollToEnd() {
+    requestAnimationFrame(() => {
+      const vp = this.viewport();
+      if (vp) {
+        vp.scrollTo({ bottom: 0 });
+      }
+    });
+  }
+
+  private matchesFilter(line: DisplayLogLine): boolean {
+    const filter = this.activeFilter();
+    if (filter === 'all') return true;
+
+    if (filter === 'drops') return line.tone === 'drop';
+    if (filter === 'prediction') return line.tone === 'prediction';
+    if (filter === 'warnings') return line.tone === 'warning';
+    if (filter === 'errors') return line.tone === 'danger';
+
+    if (filter === 'points') {
+      return (
+        line.tone === 'success' ||
+        line.tone === 'watch' ||
+        line.tone === 'streak' ||
+        line.tone === 'raid' ||
+        line.tone === 'accent'
+      );
+    }
+
+    return true;
+  }
+
+  private matchesDateFilter(rawLine: string): boolean {
+    const selectedDate = this.activeDateFilter();
+    if (selectedDate === 'all') return true;
+
+    return extractDateKey(rawLine) === selectedDate;
   }
 }

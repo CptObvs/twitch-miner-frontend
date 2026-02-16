@@ -175,7 +175,7 @@
         }
       </div>
     } @else {
-      <div class="space-y-8">
+      <div class="space-y-6">
         @for (inst of instances(); track inst.id) {
           <app-instance-card
             [instance]="inst"
@@ -183,6 +183,7 @@
             (start)="startInstance(inst.id)"
             (stop)="stopInstance(inst.id)"
             (delete)="deleteInstance(inst.id)"
+            (saveStreamers)="saveStreamers(inst.id, $event)"
           />
         }
       </div>
@@ -194,63 +195,5 @@
       (close)="showCreate.set(false)"
       (created)="createInstance($event)"
     />
-  }
-
-  @if (showFirstStartHint(); as instanceId) {
-    <div
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      (click)="dismissHint()"
-      role="dialog"
-      aria-modal="true"
-      aria-label="First start hint"
-    >
-      <div
-        class="w-full max-w-md rounded-2xl border border-twitch/30 bg-gray-900 p-6 shadow-xl shadow-twitch/10"
-        (click)="$event.stopPropagation()"
-      >
-        <div class="mb-4 flex items-center gap-3">
-          <div class="rounded-xl bg-twitch/20 p-3">
-            <svg
-              class="h-6 w-6 text-twitch-light"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="1.5"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-              />
-            </svg>
-          </div>
-          <h2 class="text-lg font-bold text-gray-100">Instance Started!</h2>
-        </div>
-        <p class="mb-2 text-sm text-gray-300">
-          Your instance has been started for the first time. To connect with Twitch, you need to
-          check the
-          <span class="font-semibold text-twitch-light">Console Output</span>.
-        </p>
-        <p class="mb-6 text-sm text-gray-400">
-          Go to <span class="font-semibold text-white">Details</span> and click on
-          <span class="font-semibold text-green-400">Connect</span> to see the logs live. There you
-          will find the link for Twitch authentication.
-        </p>
-        <div class="flex gap-3">
-          <button
-            (click)="dismissHint()"
-            class="flex-1 rounded-xl border border-gray-700 bg-gray-800 px-4 py-2.5 text-sm font-medium text-gray-300 transition-all hover:bg-gray-700 active:scale-95"
-          >
-            Got it
-          </button>
-          <button
-            (click)="goToInstanceLogs(instanceId)"
-            class="flex-1 rounded-xl bg-gradient-to-r from-twitch to-twitch-dark border border-twitch-light/20 px-4 py-2.5 text-sm font-bold text-white transition-all hover:shadow-lg hover:shadow-twitch/40 active:scale-95"
-          >
-            View Logs
-          </button>
-        </div>
-      </div>
-    </div>
   }
 </div>

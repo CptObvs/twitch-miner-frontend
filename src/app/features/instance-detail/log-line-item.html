@@ -1,0 +1,19 @@
+<div
+  class="log-line"
+  [class.log-line--success]="tone() === 'success'"
+  [class.log-line--watch]="tone() === 'watch'"
+  [class.log-line--online]="tone() === 'online'"
+  [class.log-line--streak]="tone() === 'streak'"
+  [class.log-line--raid]="tone() === 'raid'"
+  [class.log-line--drop]="tone() === 'drop'"
+  [class.log-line--prediction]="tone() === 'prediction'"
+  [class.log-line--moment]="tone() === 'moment'"
+  [class.log-line--summary]="tone() === 'summary'"
+  [class.log-line--muted]="tone() === 'muted'"
+  [class.log-line--warning]="tone() === 'warning'"
+  [class.log-line--accent]="tone() === 'accent'"
+  [class.log-line--alert]="tone() === 'alert'"
+  [class.log-line--danger]="tone() === 'danger'"
+>
+  {{ text() }}
+</div>

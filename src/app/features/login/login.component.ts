@@ -22,6 +22,19 @@ export class LoginComponent {
   loading = signal(false);
   error = signal('');
 
+  ensureVisible(event: FocusEvent) {
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+
+    setTimeout(() => {
+      target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest',
+      });
+    }, 220);
+  }
+
   async onSubmit() {
     if (this.form.invalid) return;
     this.loading.set(true);

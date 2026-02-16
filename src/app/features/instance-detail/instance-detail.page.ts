@@ -213,14 +213,16 @@ type Instance = components['schemas']['InstanceResponse'];
             </div>
           </div>
 
-          <!-- Streamers -->
-          <app-streamers-editor
-            [streamers]="instance()!.streamers"
-            (save)="saveStreamers($event)"
-          />
+          <div class="space-y-4">
+            <!-- Streamers -->
+            <app-streamers-editor
+              [streamers]="instance()!.streamers"
+              (save)="saveStreamers($event)"
+            />
 
-          <!-- Logs -->
-          <app-log-viewer [instanceId]="instance()!.id" />
+            <!-- Logs -->
+            <app-log-viewer [instanceId]="instance()!.id" />
+          </div>
         </div>
       }
     </div>

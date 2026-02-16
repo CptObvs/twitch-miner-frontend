@@ -557,7 +557,7 @@
       "post": {
         "tags": ["instances"],
         "summary": "Stop Instance",
-        "description": "Stop a running miner instance.\n\nThe request blocks until the miner process has fully exited.\nWhile shutting down, the instance status is STOPPING (visible to\nother requests, e.g. from a second browser tab).\nThe response is returned only once the instance is fully STOPPED.",
+        "description": "Stop a running miner instance.\n\nThe request blocks until the miner process has fully exited.\nWhile shutting down, the instance status is STOPPING (visible to\nother requests, e.g. from a second browser tab).\nThe response is returned only once the instance is fully STOPPED.\n\nThis endpoint is idempotent - calling it on an already stopped\ninstance will return 200 with STOPPED status.",
         "operationId": "stop_instance_instances__instance_id__stop_post",
         "security": [{ "OAuth2PasswordBearer": [] }],
         "parameters": [
@@ -632,6 +632,17 @@
             "in": "path",
             "required": true,
             "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "history_lines",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [{ "type": "integer", "minimum": 1 }, { "type": "null" }],
+              "description": "Wie viele Logzeilen initial laden? Leer = komplette Datei",
+              "title": "History Lines"
+            },
+            "description": "Wie viele Logzeilen initial laden? Leer = komplette Datei"
           }
         ],
         "responses": {
@@ -766,6 +777,14 @@
           "last_stopped_at": {
             "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }],
             "title": "Last Stopped At"
+          },
+          "activation_url": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Activation Url"
+          },
+          "activation_code": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Activation Code"
           }
         },
         "type": "object",
@@ -782,7 +801,15 @@
         "properties": {
           "id": { "type": "string", "title": "Id" },
           "status": { "$ref": "#/components/schemas/InstanceState" },
-          "pid": { "anyOf": [{ "type": "integer" }, { "type": "null" }], "title": "Pid" }
+          "pid": { "anyOf": [{ "type": "integer" }, { "type": "null" }], "title": "Pid" },
+          "activation_url": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Activation Url"
+          },
+          "activation_code": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Activation Code"
+          }
         },
         "type": "object",
         "required": ["id", "status"],

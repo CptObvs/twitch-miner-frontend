@@ -1,19 +1,6 @@
 import { Injectable } from '@angular/core';
-import { defer, from, interval, Observable, of, throwError, timer } from 'rxjs';
-import {
-  catchError,
-  concatMap,
-  filter,
-  finalize,
-  map,
-  mergeMap,
-  retry,
-  shareReplay,
-  startWith,
-  switchMap,
-  take,
-  takeWhile,
-} from 'rxjs/operators';
+import { defer, from, Observable, of, throwError, timer } from 'rxjs';
+import { catchError, filter, map, switchMap, take, takeWhile } from 'rxjs/operators';
 import { api } from '../api/client';
 import type { components } from '../api/schema';
 
@@ -210,7 +197,16 @@ export class InstancesService {
 
         // If immediately running, return instance
         if (data && data.status === 'running') {
-          return this.get$(id);
+          return this.get$(id).pipe(
+            map((instance) => {
+              if (!instance) return null;
+              return {
+                ...instance,
+                activation_url: data.activation_url ?? instance.activation_url ?? null,
+                activation_code: data.activation_code ?? instance.activation_code ?? null,
+              };
+            }),
+          );
         }
 
         // Otherwise poll until running
@@ -258,7 +254,7 @@ export class InstancesService {
   /**
    * Update streamers list as Observable
    */
-  updateStreamers$(id: string, streamers: string[]): Observable<void> {
+  updateStreamers$(id: string, streamers: string[]): Observable<Instance> {
     return defer(() =>
       from(
         api.PUT('/instances/{instance_id}/streamers', {
@@ -267,8 +263,9 @@ export class InstancesService {
         }),
       ),
     ).pipe(
-      map(({ error }) => {
+      map(({ data, error }) => {
         if (error) throw new Error('Failed to update streamers');
+        return data as Instance;
       }),
     );
   }

@@ -1,0 +1,237 @@
+@if (compact()) {
+  <!-- Compact: collapsible toggle -->
+  <button
+    (click)="onToggle()"
+    class="w-full rounded-lg px-3 py-2 text-sm font-bold transition-all duration-200"
+    [class]="
+      expanded()
+        ? 'bg-gray-700 border border-gray-600 text-gray-100'
+        : 'bg-gray-800/50 border border-gray-700/50 text-gray-400 hover:bg-gray-700 hover:text-gray-300'
+    "
+  >
+    <span class="inline-flex items-center gap-2">
+      <svg
+        class="h-4 w-4 transition-transform duration-200"
+        [class.rotate-90]="expanded()"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="2"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7" />
+      </svg>
+      <span>Console Output</span>
+    </span>
+  </button>
+
+  @if (expanded()) {
+    <div class="mt-3 rounded-lg border border-gray-700/50 bg-gray-950 overflow-hidden">
+      <div class="flex items-center justify-between px-3 pt-2">
+        <span class="text-[10px] tabular-nums text-gray-600">
+          @if (hasActiveFilter()) {
+            {{ filteredLineCount() }}/{{ lineCount() }} lines
+          } @else {
+            {{ lineCount() }} lines
+          }
+        </span>
+        <div class="flex items-center gap-2">
+          @if (!autoScroll()) {
+            <button
+              (click)="jumpToBottom()"
+              class="text-[10px] text-twitch-light hover:text-twitch transition-colors"
+            >
+              ↓ Bottom
+            </button>
+          }
+          @if (reconnecting()) {
+            <span class="text-[10px] text-yellow-400 animate-pulse"> Reconnecting… </span>
+          }
+          @if (connected()) {
+            <button
+              (click)="disconnect()"
+              class="text-[10px] font-medium text-red-400 hover:text-red-300 transition-colors"
+            >
+              Disconnect
+            </button>
+          } @else {
+            <button
+              (click)="connect()"
+              class="text-[10px] font-medium text-green-400 hover:text-green-300 transition-colors"
+            >
+              Connect
+            </button>
+          }
+        </div>
+      </div>
+      <div class="px-3 py-2 border-b border-gray-800/60 flex items-center gap-2">
+        @if (hasConnectedOnce()) {
+          <select
+            [value]="activeDateFilter()"
+            (change)="onDateFilterChange($event)"
+            class="rounded border border-gray-700 bg-gray-900 px-2 py-1 text-[11px] text-gray-300"
+          >
+            <option value="all">All days</option>
+            @for (day of availableDateFilters(); track day) {
+              <option [value]="day">{{ day }}</option>
+            }
+          </select>
+          <select
+            [value]="activeFilter()"
+            (change)="onFilterChange($event)"
+            class="rounded border border-gray-700 bg-gray-900 px-2 py-1 text-[11px] text-gray-300"
+          >
+            <option value="all">All</option>
+            <option value="points">Points</option>
+            <option value="drops">Drops</option>
+            <option value="prediction">Prediction</option>
+            <option value="warnings">Warnings</option>
+            <option value="errors">Errors</option>
+          </select>
+          <input
+            [value]="searchQuery()"
+            (input)="onSearchInput($event)"
+            type="text"
+            placeholder="Search logs..."
+            class="w-full rounded border border-gray-700 bg-gray-900 px-2 py-1 text-[11px] text-gray-300 placeholder-gray-500"
+          />
+        }
+      </div>
+      <cdk-virtual-scroll-viewport
+        class="log-viewport log-viewport--compact"
+        [itemSize]="20"
+        (scrolledIndexChange)="onScrollIndexChange()"
+      >
+        @if (filteredLineCount() === 0) {
+          <div class="p-3 text-xs text-gray-600">
+            @if (lineCount() > 0 && hasActiveFilter()) {
+              No lines match the current filter.
+            } @else if (connected()) {
+              Waiting for logs…
+            } @else {
+              Click "Connect" to start streaming logs.
+            }
+          </div>
+        } @else {
+          <app-log-line-item
+            *cdkVirtualFor="let line of filteredDisplayLines(); trackBy: trackByIndex"
+            [text]="line.text"
+            [tone]="line.tone"
+          />
+        }
+      </cdk-virtual-scroll-viewport>
+    </div>
+  }
+} @else {
+  <!-- Full: always-visible with card wrapper -->
+  <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+    <div class="mb-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <h3 class="text-sm font-semibold text-gray-300">Logs</h3>
+        <span class="text-[10px] tabular-nums text-gray-600">
+          @if (hasActiveFilter()) {
+            {{ filteredLineCount() }}/{{ lineCount() }} lines
+          } @else {
+            {{ lineCount() }} lines
+          }
+        </span>
+      </div>
+      <div class="flex items-center gap-2">
+        @if (!autoScroll()) {
+          <button
+            (click)="jumpToBottom()"
+            class="rounded-lg bg-twitch/20 px-3 py-1.5 text-xs font-medium text-twitch-light hover:bg-twitch/30 transition-colors"
+          >
+            ↓ Jump to bottom
+          </button>
+        }
+        @if (reconnecting()) {
+          <span class="text-[10px] text-yellow-400 animate-pulse">
+            Reconnecting ({{ reconnectAttempt() }}/{{ maxReconnectAttempts }})…
+          </span>
+        }
+        @if (connected()) {
+          <button
+            (click)="disconnect()"
+            class="rounded-lg bg-red-900/50 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-900 transition-colors"
+          >
+            Disconnect
+          </button>
+        } @else {
+          <button
+            (click)="connect()"
+            class="rounded-lg bg-green-900/50 px-3 py-1.5 text-xs font-medium text-green-300 hover:bg-green-900 transition-colors"
+          >
+            Connect
+          </button>
+        }
+        <button
+          (click)="clearLogs()"
+          class="rounded-lg bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-400 hover:bg-gray-700 transition-colors"
+        >
+          Clear
+        </button>
+      </div>
+    </div>
+
+    @if (hasConnectedOnce()) {
+      <div class="mb-3 flex items-center gap-2">
+        <select
+          [value]="activeDateFilter()"
+          (change)="onDateFilterChange($event)"
+          class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-1.5 text-xs text-gray-300"
+        >
+          <option value="all">All days</option>
+          @for (day of availableDateFilters(); track day) {
+            <option [value]="day">{{ day }}</option>
+          }
+        </select>
+        <select
+          [value]="activeFilter()"
+          (change)="onFilterChange($event)"
+          class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-1.5 text-xs text-gray-300"
+        >
+          <option value="all">All</option>
+          <option value="points">Points</option>
+          <option value="drops">Drops</option>
+          <option value="prediction">Prediction</option>
+          <option value="warnings">Warnings</option>
+          <option value="errors">Errors</option>
+        </select>
+        <input
+          [value]="searchQuery()"
+          (input)="onSearchInput($event)"
+          type="text"
+          placeholder="Search logs..."
+          class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-1.5 text-xs text-gray-300 placeholder-gray-500"
+        />
+      </div>
+
+      <app-log-stats [stats]="statsSummary()" />
+    }
+
+    <cdk-virtual-scroll-viewport
+      class="log-viewport log-viewport--full"
+      [itemSize]="20"
+      (scrolledIndexChange)="onScrollIndexChange()"
+    >
+      @if (filteredLineCount() === 0) {
+        <div class="p-3 text-xs text-gray-600">
+          @if (lineCount() > 0 && hasActiveFilter()) {
+            No lines match the current filter.
+          } @else if (connected()) {
+            Waiting for logs…
+          } @else {
+            Click "Connect" to start streaming logs.
+          }
+        </div>
+      } @else {
+        <app-log-line-item
+          *cdkVirtualFor="let line of filteredDisplayLines(); trackBy: trackByIndex"
+          [text]="line.text"
+          [tone]="line.tone"
+        />
+      }
+    </cdk-virtual-scroll-viewport>
+  </div>
+}
