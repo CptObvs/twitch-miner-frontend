@@ -312,6 +312,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/instances/points-snapshot': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get Points Snapshot */
+    get: operations['get_points_snapshot_instances_points_snapshot_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/instances/{instance_id}': {
     parameters: {
       query?: never;
@@ -457,10 +474,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /**
-     * Root
-     * @description Root endpoint.
-     */
+    /** Root */
     get: operations['root__get'];
     put?: never;
     post?: never;
@@ -477,10 +491,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /**
-     * Health
-     * @description Health check endpoint.
-     */
+    /** Health */
     get: operations['health_health_get'];
     put?: never;
     post?: never;
@@ -542,11 +553,15 @@ export interface components {
     InstanceCreate: {
       /** Twitch Username */
       twitch_username: string;
-      /**
-       * Streamers
-       * @default []
-       */
-      streamers: string[];
+      /** Streamers */
+      streamers?: string[];
+    };
+    /** InstancePointsSnapshotResponse */
+    InstancePointsSnapshotResponse: {
+      /** Instance Id */
+      instance_id: string;
+      /** Streamers */
+      streamers?: components['schemas']['StreamerPointsSnapshot'][];
     };
     /** InstanceResponse */
     InstanceResponse: {
@@ -559,11 +574,8 @@ export interface components {
       status: components['schemas']['InstanceState'];
       /** Pid */
       pid?: number | null;
-      /**
-       * Streamers
-       * @default []
-       */
-      streamers: string[];
+      /** Streamers */
+      streamers?: string[];
       /**
        * Created At
        * Format: date-time
@@ -644,6 +656,13 @@ export interface components {
        * Format: date-time
        */
       expires_at: string;
+    };
+    /** StreamerPointsSnapshot */
+    StreamerPointsSnapshot: {
+      /** Streamer */
+      streamer: string;
+      /** Channel Points */
+      channel_points: string;
     };
     /** StreamersUpdate */
     StreamersUpdate: {
@@ -1105,6 +1124,40 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['InstanceResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  get_points_snapshot_instances_points_snapshot_get: {
+    parameters: {
+      query?: {
+        /** @description How many recent log lines are scanned per instance */
+        history_lines?: number;
+        /** @description Force rescan and bypass cache */
+        refresh?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InstancePointsSnapshotResponse'][];
         };
       };
       /** @description Validation Error */

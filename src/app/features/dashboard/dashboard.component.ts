@@ -25,6 +25,7 @@ export class DashboardComponent {
   readonly isAdmin = this.auth.isAdmin;
 
   instances = signal<Instance[]>([]);
+  pointsByInstance = signal<Record<string, Record<string, string>>>({});
   loading = signal(false);
   error = signal('');
   showCreate = signal(false);
@@ -75,7 +76,7 @@ export class DashboardComponent {
     }
   }
 
-  loadInstances() {
+  loadInstances(forceRefreshPoints = false) {
     this.loading.set(true);
     this.error.set('');
 
@@ -93,6 +94,10 @@ export class DashboardComponent {
         this.loading.set(false);
       },
     );
+
+    this.instancesService
+      .getPointsSnapshot$({ refresh: forceRefreshPoints })
+      .subscribe((snapshot) => this.pointsByInstance.set(snapshot));
   }
 
   startInstance(id: string) {

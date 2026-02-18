@@ -37,6 +37,10 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
                 class="inline-flex items-center gap-1 rounded-full bg-gray-800/50 border border-gray-700/50 px-2.5 py-1 text-xs text-gray-300 sm:text-sm"
               >
                 {{ name }}
+                @if (pointsFor(name); as points) {
+                  <span class="text-gray-500">|</span>
+                  <span class="text-gray-400 tabular-nums">{{ points }}</span>
+                }
                 <button
                   (click)="removeStreamer(name)"
                   class="ml-0.5 text-gray-500 hover:text-red-400 transition-colors"
@@ -96,6 +100,10 @@ import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angula
                 class="inline-flex items-center gap-1 rounded-full bg-gray-800 px-3 py-1 text-sm text-gray-300"
               >
                 {{ name }}
+                @if (pointsFor(name); as points) {
+                  <span class="text-gray-500">|</span>
+                  <span class="text-gray-400 tabular-nums">{{ points }}</span>
+                }
                 <button
                   (click)="removeStreamer(name)"
                   class="ml-1 text-gray-500 hover:text-red-400"
@@ -132,6 +140,7 @@ export class StreamersEditor {
   private fb = inject(NonNullableFormBuilder);
 
   streamers = input.required<string[]>();
+  streamerPoints = input<Record<string, string>>({});
   save = output<string[]>();
   compact = input(false);
 
@@ -180,5 +189,10 @@ export class StreamersEditor {
   reset() {
     this.localStreamers.set([...this.streamers()]);
     this.dirty.set(false);
+  }
+
+  pointsFor(streamerName: string): string | null {
+    const pointsMap = this.streamerPoints();
+    return pointsMap[streamerName] ?? pointsMap[streamerName.toLowerCase()] ?? null;
   }
 }

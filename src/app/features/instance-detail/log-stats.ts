@@ -11,8 +11,16 @@ export interface LogStatsSummary {
   template: `
     <div class="mb-3 grid grid-cols-1 gap-2 md:grid-cols-2">
       <div class="rounded-lg border border-green-800/40 bg-green-950/20 px-3 py-2">
-        <div class="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-green-400/80">
-          <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
+        <div
+          class="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-green-400/80"
+        >
+          <svg
+            class="h-3.5 w-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.8"
+            stroke="currentColor"
+          >
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6" />
           </svg>
           Points
@@ -21,16 +29,27 @@ export interface LogStatsSummary {
       </div>
 
       <div class="rounded-lg border border-blue-800/40 bg-blue-950/20 px-3 py-2">
-        <div class="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-blue-300/90">
-          <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 7.5A2.25 2.25 0 0 1 6 5.25h12a2.25 2.25 0 0 1 2.25 2.25v9A2.25 2.25 0 0 1 18 18.75H6a2.25 2.25 0 0 1-2.25-2.25v-9Z" />
+        <div
+          class="mb-1 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-blue-300/90"
+        >
+          <svg
+            class="h-3.5 w-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.8"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M3.75 7.5A2.25 2.25 0 0 1 6 5.25h12a2.25 2.25 0 0 1 2.25 2.25v9A2.25 2.25 0 0 1 18 18.75H6a2.25 2.25 0 0 1-2.25-2.25v-9Z"
+            />
             <path stroke-linecap="round" stroke-linejoin="round" d="m9 9 1.5 1.5L15 9m-6 4.5h6" />
           </svg>
           Drop Claims
         </div>
         <div class="text-sm font-semibold tabular-nums text-blue-300">{{ stats().drops }}</div>
       </div>
-
     </div>
   `,
 })

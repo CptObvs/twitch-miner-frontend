@@ -422,6 +422,64 @@
         "security": [{ "OAuth2PasswordBearer": [] }]
       }
     },
+    "/instances/points-snapshot": {
+      "get": {
+        "tags": ["instances"],
+        "summary": "Get Points Snapshot",
+        "operationId": "get_points_snapshot_instances_points_snapshot_get",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "history_lines",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 20000,
+              "minimum": 100,
+              "description": "How many recent log lines are scanned per instance",
+              "default": 2000,
+              "title": "History Lines"
+            },
+            "description": "How many recent log lines are scanned per instance"
+          },
+          {
+            "name": "refresh",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Force rescan and bypass cache",
+              "default": false,
+              "title": "Refresh"
+            },
+            "description": "Force rescan and bypass cache"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/InstancePointsSnapshotResponse" },
+                  "title": "Response Get Points Snapshot Instances Points Snapshot Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/instances/{instance_id}": {
       "get": {
         "tags": ["instances"],
@@ -665,7 +723,6 @@
       "get": {
         "tags": ["health"],
         "summary": "Root",
-        "description": "Root endpoint.",
         "operationId": "root__get",
         "responses": {
           "200": {
@@ -679,7 +736,6 @@
       "get": {
         "tags": ["health"],
         "summary": "Health",
-        "description": "Health check endpoint.",
         "operationId": "health_health_get",
         "responses": {
           "200": {
@@ -745,16 +801,24 @@
       "InstanceCreate": {
         "properties": {
           "twitch_username": { "type": "string", "title": "Twitch Username" },
-          "streamers": {
-            "items": { "type": "string" },
-            "type": "array",
-            "title": "Streamers",
-            "default": []
-          }
+          "streamers": { "items": { "type": "string" }, "type": "array", "title": "Streamers" }
         },
         "type": "object",
         "required": ["twitch_username"],
         "title": "InstanceCreate"
+      },
+      "InstancePointsSnapshotResponse": {
+        "properties": {
+          "instance_id": { "type": "string", "title": "Instance Id" },
+          "streamers": {
+            "items": { "$ref": "#/components/schemas/StreamerPointsSnapshot" },
+            "type": "array",
+            "title": "Streamers"
+          }
+        },
+        "type": "object",
+        "required": ["instance_id"],
+        "title": "InstancePointsSnapshotResponse"
       },
       "InstanceResponse": {
         "properties": {
@@ -763,12 +827,7 @@
           "twitch_username": { "type": "string", "title": "Twitch Username" },
           "status": { "$ref": "#/components/schemas/InstanceState" },
           "pid": { "anyOf": [{ "type": "integer" }, { "type": "null" }], "title": "Pid" },
-          "streamers": {
-            "items": { "type": "string" },
-            "type": "array",
-            "title": "Streamers",
-            "default": []
-          },
+          "streamers": { "items": { "type": "string" }, "type": "array", "title": "Streamers" },
           "created_at": { "type": "string", "format": "date-time", "title": "Created At" },
           "last_started_at": {
             "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }],
@@ -855,6 +914,15 @@
         "type": "object",
         "required": ["code", "created_at", "expires_at"],
         "title": "RegistrationCodeResponse"
+      },
+      "StreamerPointsSnapshot": {
+        "properties": {
+          "streamer": { "type": "string", "title": "Streamer" },
+          "channel_points": { "type": "string", "title": "Channel Points" }
+        },
+        "type": "object",
+        "required": ["streamer", "channel_points"],
+        "title": "StreamerPointsSnapshot"
       },
       "StreamersUpdate": {
         "properties": {

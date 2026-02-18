@@ -149,7 +149,10 @@ const LINE_FORMATTERS: LineFormatter[] = [
   (ctx) => {
     const match = ctx.bodyText.match(/Join IRC Chat:\s*(\S+)/);
     if (!match) return null;
-    return { text: `${ctx.time}${ctx.emojiPrefix || '💬 '}Join IRC chat • ${match[1]}`, tone: 'default' };
+    return {
+      text: `${ctx.time}${ctx.emojiPrefix || '💬 '}Join IRC chat • ${match[1]}`,
+      tone: 'default',
+    };
   },
   (ctx) => {
     const match = ctx.bodyText.match(/Joining raid from .* to\s+(\S+)!/);
@@ -167,7 +170,10 @@ const LINE_FORMATTERS: LineFormatter[] = [
     const percentage = percentMatch?.[1]?.trim();
 
     if (name && percentage) {
-      return { text: `${ctx.time}${ctx.emojiPrefix || '📦 '}DROP claim • ${name} (${percentage})`, tone: 'drop' };
+      return {
+        text: `${ctx.time}${ctx.emojiPrefix || '📦 '}DROP claim • ${name} (${percentage})`,
+        tone: 'drop',
+      };
     }
     if (name) {
       return { text: `${ctx.time}${ctx.emojiPrefix || '📦 '}DROP claim • ${name}`, tone: 'drop' };

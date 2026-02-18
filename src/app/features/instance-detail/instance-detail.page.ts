@@ -216,7 +216,8 @@ type Instance = components['schemas']['InstanceResponse'];
           <div class="space-y-4">
             <!-- Streamers -->
             <app-streamers-editor
-              [streamers]="instance()!.streamers"
+              [streamers]="instance()!.streamers ?? []"
+              [streamerPoints]="streamerPoints()"
               (save)="saveStreamers($event)"
             />
 
@@ -233,6 +234,7 @@ export class InstanceDetailPage {
   id = input.required<string>();
 
   instance = signal<Instance | null>(null);
+  streamerPoints = signal<Record<string, string>>({});
   loading = signal(false);
   error = signal('');
   actionLoading = signal(false);
@@ -264,16 +266,31 @@ export class InstanceDetailPage {
       (instance) => {
         if (!instance) {
           this.error.set('Failed to load instance');
+          this.streamerPoints.set({});
         } else {
           this.instance.set(instance);
+          this.loadStreamerPoints();
         }
         this.loading.set(false);
       },
       () => {
         this.error.set('Failed to load instance');
+        this.streamerPoints.set({});
         this.loading.set(false);
       },
     );
+  }
+
+  loadStreamerPoints(forceRefresh = false) {
+    const instanceId = this.instance()?.id;
+    if (!instanceId) {
+      this.streamerPoints.set({});
+      return;
+    }
+
+    this.instancesService
+      .getPointsSnapshot$({ refresh: forceRefresh })
+      .subscribe((snapshot) => this.streamerPoints.set(snapshot[instanceId] ?? {}));
   }
 
   startInstance() {

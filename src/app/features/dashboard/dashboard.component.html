@@ -7,7 +7,7 @@
       </div>
       <div class="flex gap-3">
         <button
-          (click)="loadInstances()"
+          (click)="loadInstances(true)"
           class="group rounded-xl bg-gray-800/70 border border-gray-700/50 p-3 text-sm font-medium text-gray-300 transition-all duration-200 hover:bg-gray-700 hover:border-gray-600 hover:text-white active:scale-95"
           aria-label="Refresh instances"
           title="Refresh instances"
@@ -168,6 +168,7 @@
             [compact]="true"
             [actionLoading]="isActionLoading(inst.id)"
             [ownerName]="getUserName(inst.user_id)"
+            [streamerPoints]="pointsByInstance()[inst.id]"
             (start)="startInstance(inst.id)"
             (stop)="stopInstance(inst.id)"
             (delete)="deleteInstance(inst.id)"
@@ -180,6 +181,7 @@
           <app-instance-card
             [instance]="inst"
             [actionLoading]="isActionLoading(inst.id)"
+            [streamerPoints]="pointsByInstance()[inst.id]"
             (start)="startInstance(inst.id)"
             (stop)="stopInstance(inst.id)"
             (delete)="deleteInstance(inst.id)"

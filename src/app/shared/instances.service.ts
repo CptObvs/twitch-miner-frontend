@@ -6,6 +6,7 @@ import type { components } from '../api/schema';
 
 type Instance = components['schemas']['InstanceResponse'];
 type InstanceStatus = components['schemas']['InstanceStatus'];
+type InstancePointsSnapshot = components['schemas']['InstancePointsSnapshotResponse'];
 
 @Injectable({ providedIn: 'root' })
 export class InstancesService {
@@ -267,6 +268,39 @@ export class InstancesService {
         if (error) throw new Error('Failed to update streamers');
         return data as Instance;
       }),
+    );
+  }
+
+  getPointsSnapshot$(options?: {
+    refresh?: boolean;
+    historyLines?: number;
+  }): Observable<Record<string, Record<string, string>>> {
+    return defer(() =>
+      from(
+        api.GET('/instances/points-snapshot', {
+          params: {
+            query: {
+              refresh: options?.refresh,
+              history_lines: options?.historyLines,
+            },
+          },
+        }),
+      ),
+    ).pipe(
+      map(({ data, error }) => {
+        if (error || !data) return {};
+
+        const byInstance: Record<string, Record<string, string>> = {};
+        for (const entry of data as InstancePointsSnapshot[]) {
+          const streamers = entry.streamers ?? [];
+          byInstance[entry.instance_id] = streamers.reduce<Record<string, string>>((acc, item) => {
+            acc[item.streamer] = item.channel_points;
+            return acc;
+          }, {});
+        }
+        return byInstance;
+      }),
+      catchError(() => of({})),
     );
   }
 
