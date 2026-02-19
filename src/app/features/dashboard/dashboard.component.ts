@@ -6,8 +6,8 @@ import { AdminService } from '../../shared/admin.service';
 import { InstancesService } from '../../shared/instances.service';
 import { LoadingView } from '../../shared/components/loading-view';
 import { ErrorView } from '../../shared/components/error-view';
-import { CreateInstanceDialog } from './create-instance-dialog';
-import { InstanceCard } from './instance-card';
+import { CreateInstanceDialog } from './dialogs/create-instance.dialog';
+import { InstanceCard } from './components/instance-card';
 import { executeActionWithId$ } from '../../shared/rxjs-utils';
 
 type Instance = components['schemas']['InstanceResponse'];

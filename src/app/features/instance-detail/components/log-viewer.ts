@@ -10,11 +10,11 @@ import {
   viewChild,
 } from '@angular/core';
 import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
-import { AuthService } from '../../core/auth/auth.service';
-import { API_BASE_URL } from '../../api/config';
+import { AuthService } from '../../../core/auth/auth.service';
+import { API_BASE_URL } from '../../../api/config';
 import { LogLineItem } from './log-line-item';
 import { LogStats, LogStatsSummary } from './log-stats';
-import { DisplayLogLine, extractDateKey, formatLogLine } from './log-line-formatter';
+import { DisplayLogLine, extractDateKey, formatLogLine } from '../utils/log-line-formatter';
 
 /** Pixel threshold to consider the viewport "at the bottom" */
 const SCROLL_BOTTOM_THRESHOLD = 48;

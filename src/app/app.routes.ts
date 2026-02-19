@@ -6,17 +6,17 @@ export const routes: Routes = [
   {
     path: 'login',
     title: 'Miner | Login',
-    loadComponent: () => import('./features/login/login.component').then((m) => m.LoginComponent),
+    loadComponent: () => import('./features/auth/login.component').then((m) => m.LoginComponent),
   },
   {
     path: 'register',
     title: 'Miner | Register',
     loadComponent: () =>
-      import('./features/register/register.component').then((m) => m.RegisterComponent),
+      import('./features/auth/register.component').then((m) => m.RegisterComponent),
   },
   {
     path: '',
-    loadComponent: () => import('./layout/shell').then((m) => m.Shell),
+    loadComponent: () => import('./layout/layout.component').then((m) => m.LayoutComponent),
     canActivate: [authGuard],
     children: [
       {
@@ -29,14 +29,15 @@ export const routes: Routes = [
         path: 'instances/:id',
         title: 'Miner | Instance',
         loadComponent: () =>
-          import('./features/instance-detail/instance-detail.page').then(
-            (m) => m.InstanceDetailPage,
+          import('./features/instance-detail/instance-detail.component').then(
+            (m) => m.InstanceDetailComponent,
           ),
       },
       {
         path: 'admin',
         title: 'Miner | Admin',
-        loadComponent: () => import('./features/admin/admin.page').then((m) => m.AdminPage),
+        loadComponent: () =>
+          import('./features/admin/admin.component').then((m) => m.AdminComponent),
         canActivate: [adminGuard],
       },
       {
@@ -48,7 +49,7 @@ export const routes: Routes = [
       {
         path: '**',
         loadComponent: () =>
-          import('./features/not-found/not-found.page').then((m) => m.NotFoundPage),
+          import('./features/not-found/not-found.component').then((m) => m.NotFoundComponent),
       },
     ],
   },

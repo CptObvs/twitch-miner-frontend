@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { api } from '../api/client';
-import type { components } from '../api/schema';
-import { ExpiryTimer } from '../shared/components/expiry-timer';
-import { ToastService } from '../shared/toast.service';
+import { api } from '../../api/client';
+import type { components } from '../../api/schema';
+import { ExpiryTimer } from '../../shared/components/expiry-timer';
+import { ToastService } from '../../shared/toast.service';
 
 type Code = components['schemas']['RegistrationCodeDetailResponse'];
 
@@ -194,7 +194,7 @@ type Code = components['schemas']['RegistrationCodeDetailResponse'];
     </div>
   `,
 })
-export class SidebarInvite {
+export class SidebarInviteComponent {
   private toast = inject(ToastService);
   codes = signal<Code[]>([]);
   sortedCodes = computed(() => {

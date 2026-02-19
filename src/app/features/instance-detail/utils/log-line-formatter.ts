@@ -1,4 +1,4 @@
-import { LogTone } from './log-line-item';
+import { LogTone } from '../components/log-line-item';
 
 export interface DisplayLogLine {
   text: string;

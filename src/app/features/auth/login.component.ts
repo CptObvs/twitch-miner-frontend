@@ -2,50 +2,38 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
+import { FormInput } from '../../shared/components/form-input';
+import { Button } from '../../shared/components/button';
 
 @Component({
-  selector: 'app-register',
+  selector: 'app-login',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink],
-  templateUrl: './register.component.html',
+  imports: [ReactiveFormsModule, RouterLink, FormInput, Button],
+  templateUrl: './login.component.html',
 })
-export class RegisterComponent {
+export class LoginComponent {
   private auth = inject(AuthService);
   private router = inject(Router);
   private fb = inject(NonNullableFormBuilder);
 
   form = this.fb.group({
     username: ['', Validators.required],
-    password: ['', [Validators.required, Validators.minLength(6)]],
-    registrationCode: ['', Validators.required],
+    password: ['', Validators.required],
   });
 
   loading = signal(false);
   error = signal('');
-
-  ensureVisible(event: FocusEvent) {
-    const target = event.target as HTMLElement | null;
-    if (!target) return;
-
-    setTimeout(() => {
-      target.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-        inline: 'nearest',
-      });
-    }, 220);
-  }
 
   async onSubmit() {
     if (this.form.invalid) return;
     this.loading.set(true);
     this.error.set('');
     try {
-      const { username, password, registrationCode } = this.form.getRawValue();
-      await this.auth.register(username, password, registrationCode);
+      const { username, password } = this.form.getRawValue();
+      await this.auth.login(username, password);
       await this.router.navigate(['/dashboard']);
     } catch (e) {
-      this.error.set(e instanceof Error ? e.message : 'Registration failed');
+      this.error.set(e instanceof Error ? e.message : 'Login failed');
     } finally {
       this.loading.set(false);
     }
