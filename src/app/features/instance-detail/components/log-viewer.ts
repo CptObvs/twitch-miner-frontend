@@ -6,6 +6,7 @@ import {
   inject,
   input,
   NgZone,
+  output,
   signal,
   viewChild,
 } from '@angular/core';
@@ -47,6 +48,7 @@ export class LogViewer {
   readonly maxReconnectAttempts = RECONNECT_MAX_ATTEMPTS;
 
   instanceId = input.required<string>();
+  clearLogsEvent = output<void>();
 
   /** When true, renders as a collapsible section with auto-connect */
   compact = input(false);
@@ -54,11 +56,18 @@ export class LogViewer {
   /** All buffered log lines */
   lines = signal<string[]>([]);
   hasConnectedOnce = signal(false);
-  displayLines = computed(() => this.lines().map((line) => formatLogLine(line)));
+  waitingForOutput = signal(false);
+  waitingDots = signal('.');
+  private waitingDotsInterval: ReturnType<typeof setInterval> | null = null;
+  /** Lines without system waiting messages */
+  private nonWaitingLines = computed(() =>
+    this.lines().filter((line) => !line.startsWith('[system] Waiting for miner')),
+  );
+  displayLines = computed(() => this.nonWaitingLines().map((line) => formatLogLine(line)));
   activeDateFilter = signal<DateFilter>('all');
   availableDateFilters = computed(() => {
     const unique = new Set<string>();
-    for (const rawLine of this.lines()) {
+    for (const rawLine of this.nonWaitingLines()) {
       const dateKey = extractDateKey(rawLine);
       if (dateKey) {
         unique.add(dateKey);
@@ -69,7 +78,7 @@ export class LogViewer {
   activeFilter = signal<LogFilter>('all');
   searchQuery = signal('');
   filteredDisplayLines = computed(() => {
-    const rawLines = this.lines();
+    const rawLines = this.nonWaitingLines();
     const query = this.searchQuery().trim().toLowerCase();
 
     return this.displayLines().filter((line, index) => {
@@ -90,12 +99,12 @@ export class LogViewer {
       this.activeDateFilter() !== 'all' ||
       this.searchQuery().trim().length > 0,
   );
-  lineCount = computed(() => this.lines().length);
+  lineCount = computed(() => this.nonWaitingLines().length);
   statsSummary = computed<LogStatsSummary>(() => {
     let points = 0;
     let drops = 0;
 
-    for (const rawLine of this.lines()) {
+    for (const rawLine of this.nonWaitingLines()) {
       const formatted = formatLogLine(rawLine);
 
       const pointMatch = formatted.text.match(/\+(\d+)\b/);
@@ -141,6 +150,7 @@ export class LogViewer {
       if (this.flushRafId !== null) {
         cancelAnimationFrame(this.flushRafId);
       }
+      this.stopWaitingAnimation();
     });
   }
 
@@ -151,7 +161,7 @@ export class LogViewer {
   connect() {
     this.disconnect();
     this.cancelReconnect();
-    this.clearLogs();
+    this.clearLogsContent();
     this.hasConnectedOnce.set(true);
     this.intentionalDisconnect = false;
     this.reconnectAttempt.set(0);
@@ -168,15 +178,23 @@ export class LogViewer {
     this.partialChunk = '';
   }
 
-  clearLogs() {
+  clearLogsContent() {
     this.lines.set([]);
     this.pendingLines = [];
     this.autoScroll.set(true);
+    this.waitingForOutput.set(false);
+    this.stopWaitingAnimation();
   }
 
   jumpToBottom() {
     this.autoScroll.set(true);
     this.scrollToEnd();
+  }
+
+  onClearLogsClick() {
+    if (!confirm('Are you sure you want to delete all logs?')) return;
+    this.clearLogsEvent.emit();
+    this.clearLogsContent(); // Clear logs locally
   }
 
   /** Toggle expanded state (compact mode). Auto-connects on first expand. */
@@ -192,7 +210,7 @@ export class LogViewer {
     } else {
       // Closing — disconnect to free resources
       this.disconnect();
-      this.clearLogs();
+      this.clearLogsContent();
     }
   }
 
@@ -285,8 +303,33 @@ export class LogViewer {
           const newLines = segments.filter((l) => l.startsWith('data: ')).map((l) => l.slice(6));
 
           if (newLines.length > 0) {
-            this.pendingLines.push(...newLines);
-            this.scheduleFlush();
+            // Check for system waiting messages
+            const hasWaiting = newLines.some((l) => l.startsWith('[system] Waiting for miner'));
+            const hasReal = newLines.some(
+              (l) => !l.startsWith('[system] Waiting for miner') && !l.startsWith('[system]'),
+            );
+
+            if (hasWaiting && !hasReal) {
+              this.zone.run(() => {
+                if (!this.waitingForOutput()) {
+                  this.waitingForOutput.set(true);
+                  this.startWaitingAnimation();
+                }
+              });
+            }
+            if (hasReal) {
+              this.zone.run(() => {
+                this.waitingForOutput.set(false);
+                this.stopWaitingAnimation();
+              });
+            }
+
+            // Only queue non-waiting lines
+            const realLines = newLines.filter((l) => !l.startsWith('[system] Waiting for miner'));
+            if (realLines.length > 0) {
+              this.pendingLines.push(...realLines);
+              this.scheduleFlush();
+            }
           }
           read();
         })
@@ -412,5 +455,23 @@ export class LogViewer {
     if (selectedDate === 'all') return true;
 
     return extractDateKey(rawLine) === selectedDate;
+  }
+
+  private startWaitingAnimation() {
+    this.stopWaitingAnimation();
+    let step = 0;
+    const frames = ['.', '..', '...', '....'];
+    this.waitingDots.set(frames[0]);
+    this.waitingDotsInterval = setInterval(() => {
+      step = (step + 1) % frames.length;
+      this.zone.run(() => this.waitingDots.set(frames[step]));
+    }, 500);
+  }
+
+  private stopWaitingAnimation() {
+    if (this.waitingDotsInterval !== null) {
+      clearInterval(this.waitingDotsInterval);
+      this.waitingDotsInterval = null;
+    }
   }
 }

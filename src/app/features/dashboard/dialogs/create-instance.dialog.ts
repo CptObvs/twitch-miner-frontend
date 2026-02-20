@@ -13,12 +13,13 @@ export class CreateInstanceDialog {
 
   // Outputs
   close = output<void>();
-  created = output<{ twitch_username: string; streamers: string[] }>();
+  created = output<{ twitch_username: string; streamers: string[]; enable_analytics: boolean }>();
 
   // Form
   form = this.fb.group({
     twitchUsername: ['', Validators.required],
     streamers: [''],
+    enableAnalytics: [false],
   });
 
   // State
@@ -28,12 +29,16 @@ export class CreateInstanceDialog {
   onSubmit(): void {
     if (this.form.invalid) return;
 
-    const { twitchUsername, streamers } = this.form.getRawValue();
+    const { twitchUsername, streamers, enableAnalytics } = this.form.getRawValue();
     const streamerList = streamers
       .split(',')
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
 
-    this.created.emit({ twitch_username: twitchUsername, streamers: streamerList });
+    this.created.emit({
+      twitch_username: twitchUsername,
+      streamers: streamerList,
+      enable_analytics: enableAnalytics,
+    });
   }
 }

@@ -142,7 +142,11 @@ export class DashboardComponent {
     );
   }
 
-  createInstance(data: { twitch_username: string; streamers: string[] }) {
+  createInstance(data: {
+    twitch_username: string;
+    streamers: string[];
+    enable_analytics: boolean;
+  }) {
     this.instancesService
       .create$(data)
       .pipe(catchError(() => of(void 0)))

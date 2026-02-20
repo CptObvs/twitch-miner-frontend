@@ -375,6 +375,28 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/instances/{instance_id}/analytics': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /**
+     * Update Analytics
+     * @description Enable or disable analytics for an instance.
+     *     If the instance is running, you need to stop and restart it
+     *     for changes to take effect.
+     */
+    put: operations['update_analytics_instances__instance_id__analytics_put'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/instances/{instance_id}/start': {
     parameters: {
       query?: never;
@@ -461,7 +483,11 @@ export interface paths {
     get: operations['stream_logs_instances__instance_id__logs_get'];
     put?: never;
     post?: never;
-    delete?: never;
+    /**
+     * Delete Logs
+     * @description Delete all log files for a miner instance.
+     */
+    delete: operations['delete_logs_instances__instance_id__logs_delete'];
     options?: never;
     head?: never;
     patch?: never;
@@ -505,6 +531,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** AnalyticsUpdate */
+    AnalyticsUpdate: {
+      /** Enable Analytics */
+      enable_analytics: boolean;
+    };
     /** Body_login_auth_token_post */
     Body_login_auth_token_post: {
       /** Grant Type */
@@ -555,6 +586,11 @@ export interface components {
       twitch_username: string;
       /** Streamers */
       streamers?: string[];
+      /**
+       * Enable Analytics
+       * @default false
+       */
+      enable_analytics: boolean;
     };
     /** InstancePointsSnapshotResponse */
     InstancePointsSnapshotResponse: {
@@ -576,6 +612,13 @@ export interface components {
       pid?: number | null;
       /** Streamers */
       streamers?: string[];
+      /**
+       * Enable Analytics
+       * @default false
+       */
+      enable_analytics: boolean;
+      /** Analytics Port */
+      analytics_port?: number | null;
       /**
        * Created At
        * Format: date-time
@@ -1266,6 +1309,41 @@ export interface operations {
       };
     };
   };
+  update_analytics_instances__instance_id__analytics_put: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        instance_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AnalyticsUpdate'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['InstanceResponse'];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
   start_instance_instances__instance_id__start_post: {
     parameters: {
       query?: never;
@@ -1365,6 +1443,37 @@ export interface operations {
         /** @description Wie viele Logzeilen initial laden? Leer = komplette Datei */
         history_lines?: number | null;
       };
+      header?: never;
+      path: {
+        instance_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  delete_logs_instances__instance_id__logs_delete: {
+    parameters: {
+      query?: never;
       header?: never;
       path: {
         instance_id: string;

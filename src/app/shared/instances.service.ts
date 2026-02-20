@@ -47,11 +47,14 @@ export class InstancesService {
     onError?: (error: string) => void,
   ): () => void {
     const subscriptions: (() => void)[] = [];
+    let currentInstances: Instance[] = [];
 
     const mainSub = this.list$()
       .pipe(catchError(() => of([] as Instance[])))
       .subscribe({
         next: (instances) => {
+          // Keep a reference to the current instances list
+          currentInstances = instances;
           onUpdate(instances);
 
           // Clean up old subscriptions
@@ -64,8 +67,8 @@ export class InstancesService {
             .forEach((inst) => {
               const unsub = this.watchInstanceUpdates$(inst.id, (updated) => {
                 if (updated) {
-                  // Update this instance in the list
-                  const current = instances.slice();
+                  // Update this instance in the current list
+                  const current = currentInstances.slice();
                   const index = current.findIndex((i) => i.id === inst.id);
                   if (index !== -1) {
                     current[index] = updated;
@@ -157,7 +160,11 @@ export class InstancesService {
   /**
    * Create instance as Observable
    */
-  create$(payload: { twitch_username: string; streamers: string[] }): Observable<void> {
+  create$(payload: {
+    twitch_username: string;
+    streamers: string[];
+    enable_analytics: boolean;
+  }): Observable<void> {
     return defer(() => from(api.POST('/instances/', { body: payload }))).pipe(
       map(({ error }) => {
         if (error) throw new Error('Failed to create instance');
@@ -194,7 +201,7 @@ export class InstancesService {
       ),
     ).pipe(
       switchMap(({ data, error }) => {
-        if (error) return of(null);
+        if (error || !data) return of(null);
 
         // If immediately running, return instance
         if (data && data.status === 'running') {
@@ -207,6 +214,7 @@ export class InstancesService {
                 activation_code: data.activation_code ?? instance.activation_code ?? null,
               };
             }),
+            catchError(() => of(null)),
           );
         }
 
@@ -229,12 +237,20 @@ export class InstancesService {
         }),
       ),
     ).pipe(
-      switchMap(({ error }) => {
-        if (error) return throwError(() => new Error('Failed to stop instance'));
+      switchMap(({ data, error }) => {
+        if (error || !data) return throwError(() => new Error('Failed to stop instance'));
         // Backend has finished stopping, fetch final state
-        return this.get$(id);
+        return this.get$(id).pipe(
+          map((instance) => instance ?? null),
+          catchError(() => of(null)),
+        );
       }),
-      catchError(() => this.get$(id)),
+      catchError(() =>
+        this.get$(id).pipe(
+          map((instance) => instance ?? null),
+          catchError(() => of(null)),
+        ),
+      ),
     );
   }
 
@@ -267,6 +283,47 @@ export class InstancesService {
       map(({ data, error }) => {
         if (error) throw new Error('Failed to update streamers');
         return data as Instance;
+      }),
+    );
+  }
+
+  /**
+   * Update analytics setting as Observable
+   */
+  updateAnalytics$(id: string, enableAnalytics: boolean): Observable<Instance> {
+    return defer(() =>
+      from(
+        api.PUT('/instances/{instance_id}/analytics', {
+          params: { path: { instance_id: id } },
+          body: { enable_analytics: enableAnalytics },
+        }),
+      ),
+    ).pipe(
+      map(({ data, error }) => {
+        if (error) throw new Error('Failed to update analytics');
+        return data as Instance;
+      }),
+    );
+  }
+
+  /**
+   * Clear logs for instance
+   */
+  clearLogs$(id: string): Observable<void> {
+    return defer(() =>
+      from(
+        api.DELETE('/instances/{instance_id}/logs', {
+          params: { path: { instance_id: id } },
+        }),
+      ),
+    ).pipe(
+      switchMap(({ data, error }) => {
+        if (error) return throwError(() => new Error('Failed to clear logs'));
+        return of(void 0);
+      }),
+      catchError((err) => {
+        console.error('Clear logs error:', err);
+        throw err;
       }),
     );
   }

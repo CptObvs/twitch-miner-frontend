@@ -578,6 +578,45 @@
         }
       }
     },
+    "/instances/{instance_id}/analytics": {
+      "put": {
+        "tags": ["instances"],
+        "summary": "Update Analytics",
+        "description": "Enable or disable analytics for an instance.\nIf the instance is running, you need to stop and restart it\nfor changes to take effect.",
+        "operationId": "update_analytics_instances__instance_id__analytics_put",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/AnalyticsUpdate" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/InstanceResponse" } }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
     "/instances/{instance_id}/start": {
       "post": {
         "tags": ["instances"],
@@ -717,6 +756,35 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": ["instances"],
+        "summary": "Delete Logs",
+        "description": "Delete all log files for a miner instance.",
+        "operationId": "delete_logs_instances__instance_id__logs_delete",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
       }
     },
     "/": {
@@ -748,6 +816,12 @@
   },
   "components": {
     "schemas": {
+      "AnalyticsUpdate": {
+        "properties": { "enable_analytics": { "type": "boolean", "title": "Enable Analytics" } },
+        "type": "object",
+        "required": ["enable_analytics"],
+        "title": "AnalyticsUpdate"
+      },
       "Body_login_auth_token_post": {
         "properties": {
           "grant_type": {
@@ -801,7 +875,8 @@
       "InstanceCreate": {
         "properties": {
           "twitch_username": { "type": "string", "title": "Twitch Username" },
-          "streamers": { "items": { "type": "string" }, "type": "array", "title": "Streamers" }
+          "streamers": { "items": { "type": "string" }, "type": "array", "title": "Streamers" },
+          "enable_analytics": { "type": "boolean", "title": "Enable Analytics", "default": false }
         },
         "type": "object",
         "required": ["twitch_username"],
@@ -828,6 +903,11 @@
           "status": { "$ref": "#/components/schemas/InstanceState" },
           "pid": { "anyOf": [{ "type": "integer" }, { "type": "null" }], "title": "Pid" },
           "streamers": { "items": { "type": "string" }, "type": "array", "title": "Streamers" },
+          "enable_analytics": { "type": "boolean", "title": "Enable Analytics", "default": false },
+          "analytics_port": {
+            "anyOf": [{ "type": "integer" }, { "type": "null" }],
+            "title": "Analytics Port"
+          },
           "created_at": { "type": "string", "format": "date-time", "title": "Created At" },
           "last_started_at": {
             "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }],

@@ -193,15 +193,77 @@
 
       <!-- Content Section -->
       <div class="space-y-4">
+        <!-- Analytics Section -->
+        <div class="space-y-2">
+          @if (instance()!.enable_analytics) {
+            <button
+              (click)="toggleAnalytics()"
+              [disabled]="analyticsLoading()"
+              class="group flex w-full items-center justify-between gap-3 rounded-lg border border-emerald-700/40 bg-emerald-950/30 px-3 py-2 text-left transition-all duration-200 cursor-pointer hover:bg-emerald-950/50"
+            >
+              <div class="flex items-center gap-2.5">
+                <span
+                  class="inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50"
+                ></span>
+                <span class="text-sm font-medium text-gray-300">Analytics Server</span>
+                <span
+                  class="rounded-full bg-emerald-900/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-400"
+                  >On</span
+                >
+              </div>
+              @if (analyticsLoading()) {
+                <app-loading-spinner size="sm" />
+              }
+            </button>
+          } @else {
+            <button
+              (click)="toggleAnalytics()"
+              [disabled]="analyticsLoading()"
+              class="group flex w-full items-center justify-between gap-3 rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-left transition-all duration-200 cursor-pointer hover:bg-gray-800/80"
+            >
+              <div class="flex items-center gap-2.5">
+                <span class="inline-flex h-2 w-2 rounded-full bg-gray-600"></span>
+                <span class="text-sm font-medium text-gray-300">Analytics Server</span>
+                <span
+                  class="rounded-full bg-gray-800 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-gray-500"
+                  >Off</span
+                >
+              </div>
+              @if (analyticsLoading()) {
+                <app-loading-spinner size="sm" />
+              }
+            </button>
+          }
+          @if (instance()!.enable_analytics && instance()!.analytics_port && isRunning()) {
+            <div class="pl-[1.125rem] text-xs">
+              <a
+                [href]="'http://noxiousgaming.eu:' + instance()!.analytics_port"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="text-blue-400 hover:text-blue-300 underline"
+              >
+                noxiousgaming.eu:{{ instance()!.analytics_port }}
+              </a>
+            </div>
+          }
+        </div>
+
         <!-- Streamers Editor -->
-        <app-streamers-editor
-          [streamers]="instance()!.streamers ?? []"
-          [streamerPoints]="streamerPoints()"
-          (save)="saveStreamers($event)"
-        />
+        <div>
+          <app-streamers-editor
+            [streamers]="instance()!.streamers ?? []"
+            [streamerPoints]="streamerPoints()"
+            (save)="saveStreamers($event)"
+          />
+          @if (streamersSaved()) {
+            <p class="text-[11px] text-yellow-600 mt-2">
+              Please restart instance for changes to take effect
+            </p>
+          }
+        </div>
 
         <!-- Log Viewer -->
-        <app-log-viewer [instanceId]="instance()!.id" />
+        <app-log-viewer [instanceId]="instance()!.id" (clearLogsEvent)="clearLogs()" />
       </div>
     </div>
   }
