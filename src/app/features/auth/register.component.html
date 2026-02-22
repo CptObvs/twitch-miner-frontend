@@ -1,0 +1,102 @@
+<div
+  class="relative min-h-dvh overflow-y-auto bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:flex sm:min-h-screen sm:items-center sm:justify-center sm:py-8"
+>
+  <div class="absolute inset-0 overflow-hidden">
+    <div
+      class="absolute -top-1/2 -left-1/2 h-full w-full rounded-full bg-twitch/5 blur-3xl animate-pulse"
+    ></div>
+    <div
+      class="absolute -bottom-1/2 -right-1/2 h-full w-full rounded-full bg-twitch-dark/5 blur-3xl animate-pulse"
+      style="animation-delay: 1s"
+    ></div>
+  </div>
+
+  <div class="relative mx-auto w-full max-w-sm space-y-6">
+    <div class="text-center">
+      <img
+        src="miner.png"
+        alt="Twitch Miner"
+        class="mx-auto mb-4 h-24 w-24 drop-shadow-[0_0_15px_rgba(145,70,255,0.4)]"
+      />
+      <h1
+        class="text-3xl font-bold bg-gradient-to-r from-twitch-light via-twitch to-twitch-dark bg-clip-text text-transparent"
+      >
+        Twitch Miner
+      </h1>
+      <p class="mt-1 text-xs font-semibold tracking-widest text-gray-500 uppercase">by NGC</p>
+    </div>
+
+    <form
+      [formGroup]="form"
+      (ngSubmit)="onSubmit()"
+      class="space-y-4 rounded-2xl border border-gray-800/50 bg-gray-900/50 p-6 shadow-2xl shadow-black/50 backdrop-blur-xl"
+    >
+      @if (error()) {
+        <div
+          class="animate-shake rounded-xl border border-red-500/20 bg-gradient-to-r from-red-900/40 to-red-800/40 p-3 text-sm text-red-300 shadow-lg shadow-red-900/20"
+          role="alert"
+        >
+          <div class="flex items-center gap-2">
+            <svg
+              class="h-5 w-5 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
+              />
+            </svg>
+            <span>{{ error() }}</span>
+          </div>
+        </div>
+      }
+
+      <app-form-input
+        type="text"
+        placeholder="Choose a username"
+        autocomplete="username"
+        [control]="form.get('username')!"
+      />
+
+      <app-form-input
+        type="password"
+        placeholder="Choose a password"
+        autocomplete="new-password"
+        [control]="form.get('password')!"
+      />
+
+      <app-form-input
+        type="text"
+        placeholder="Enter your invite code"
+        [control]="form.get('registrationCode')!"
+      />
+
+      <app-button
+        type="submit"
+        variant="primary"
+        [fullWidth]="true"
+        [disabled]="form.invalid"
+        [loading]="loading()"
+      >
+        @if (loading()) {
+          Creating account...
+        } @else {
+          Register
+        }
+      </app-button>
+    </form>
+
+    <p class="text-center text-sm text-gray-400">
+      Already have an account?
+      <a
+        routerLink="/login"
+        class="font-medium text-twitch-light transition-colors hover:text-twitch hover:underline"
+        >Sign in</a
+      >
+    </p>
+  </div>
+</div>
