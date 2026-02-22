@@ -37,7 +37,13 @@
             <p class="text-xs text-gray-500 font-mono">{{ instance()!.id }}</p>
           </div>
           <div class="flex flex-col gap-1.5 items-end">
-            <app-status-badge [running]="isRunning()" [stopping]="stopping()" />
+            <div class="flex items-center gap-2">
+              <span class="rounded-md px-1.5 py-0.5 text-[10px] font-semibold"
+                [class]="isDocker() ? 'bg-blue-900/40 text-blue-300' : 'bg-orange-900/40 text-orange-300'">
+                {{ isDocker() ? 'Docker' : 'Twitch Miner V2' }}
+              </span>
+              <app-status-badge [running]="isRunning()" [stopping]="stopping()" />
+            </div>
             <app-uptime-timer
               [startedAt]="instance()!.last_started_at ?? null"
               [isRunning]="isRunning()"

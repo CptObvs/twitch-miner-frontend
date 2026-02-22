@@ -31,15 +31,21 @@
     </div>
 
     <div class="min-w-0 flex-1">
-      <a
-        [routerLink]="['/instances', instance().id]"
-        class="block truncate text-sm font-semibold transition-colors duration-150"
-        [class]="
-          isRunning() ? 'gradient-text hover:opacity-80' : 'text-gray-200 hover:text-twitch-light'
-        "
-      >
-        {{ instance().id.slice(0, 8) }}
-      </a>
+      <div class="flex items-center gap-2">
+        <a
+          [routerLink]="['/instances', instance().id]"
+          class="truncate text-sm font-semibold transition-colors duration-150"
+          [class]="
+            isRunning() ? 'gradient-text hover:opacity-80' : 'text-gray-200 hover:text-twitch-light'
+          "
+        >
+          {{ instance().id.slice(0, 8) }}
+        </a>
+        <span class="shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold leading-none"
+          [class]="isDocker() ? 'bg-blue-900/50 text-blue-300' : 'bg-orange-900/50 text-orange-300'">
+          {{ isDocker() ? 'Docker' : 'Miner V2' }}
+        </span>
+      </div>
       @if (ownerName()) {
         <span class="block truncate text-xs text-gray-500">
           <svg
@@ -165,7 +171,7 @@
           <p class="text-gray-400 text-xs">Uptime</p>
           <span class="rounded-md px-1.5 py-0.5 text-[10px] font-medium"
             [class]="isDocker() ? 'bg-blue-900/40 text-blue-300' : 'bg-orange-900/40 text-orange-300'">
-            {{ isDocker() ? 'Docker' : 'Subprocess' }}
+            {{ isDocker() ? 'Docker' : 'Twitch Miner V2' }}
           </span>
         </div>
         <app-uptime-timer
