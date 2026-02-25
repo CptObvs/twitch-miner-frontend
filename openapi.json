@@ -1,0 +1,1510 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Twitch Miner Backend",
+    "description": "Manage TwitchDropsMiner Docker instances via REST API",
+    "version": "2.0.0"
+  },
+  "servers": [{ "url": "/api" }],
+  "paths": {
+    "/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register",
+        "description": "Register a new user account.\n\nRequires a valid registration code to prevent unauthorized registrations.\nReturns an access token immediately upon successful registration.",
+        "operationId": "register_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/RegisterRequest" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/TokenResponse" } }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/token": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login",
+        "description": "OAuth2 compatible token endpoint.\n\nUse this endpoint with the 'Authorize' button in SwaggerUI:\n1. Click 'Authorize'\n2. Enter your username and password\n3. All protected endpoints will be automatically authenticated\n\nThis endpoint follows the OAuth2 Password Flow specification.",
+        "operationId": "login_auth_token_post",
+        "requestBody": {
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": { "$ref": "#/components/schemas/Body_login_auth_token_post" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/TokenResponse" } }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Get Me",
+        "description": "Get the currently authenticated user's information.\n\nRequires a valid Bearer token in the Authorization header.",
+        "operationId": "get_me_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/UserResponse" } }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/auth/change-password": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Change Password",
+        "description": "Change the current user's password.\n\nRequires:\n- Valid Bearer token\n- Current password (for verification)\n- New password (must be different from current)",
+        "operationId": "change_password_auth_change_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ChangePasswordRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Change Password Auth Change Password Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List All Users",
+        "description": "List all users in the system.\n\nOnly ADMIN users can access this endpoint.",
+        "operationId": "list_all_users_admin_users_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/UserResponse" },
+                  "type": "array",
+                  "title": "Response List All Users Admin Users Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/admin/users/{user_id}/role": {
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Update User Role",
+        "description": "Update a user's role.\n\nOnly ADMIN users can access this endpoint.\nAllows changing a user's role between ADMIN and USER.",
+        "operationId": "update_user_role_admin_users__user_id__role_patch",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "User Id" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateUserRoleRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/UserResponse" } }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{user_id}/invite-limit": {
+      "patch": {
+        "tags": ["Admin"],
+        "summary": "Update Invite Limit",
+        "description": "Update a user's invite code limit.\n\nOnly ADMIN users can access this endpoint.\nSets how many active (unused, non-expired) invite codes a user can have.",
+        "operationId": "update_invite_limit_admin_users__user_id__invite_limit_patch",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "User Id" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateInviteLimitRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/UserResponse" } }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/codes/generate": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Generate Registration Code",
+        "description": "Generate a new registration code (admin only).\n\nPrefer using POST /codes/generate which is available to all users.\nThe code will expire after the specified number of hours (default: 24).",
+        "operationId": "generate_registration_code_admin_codes_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/GenerateCodeRequest" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RegistrationCodeResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/admin/codes": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List Registration Codes",
+        "description": "List all registration codes (used and unused).\n\nOnly ADMIN users can access this endpoint.\nPrefer using GET /codes which shows user-specific codes.",
+        "operationId": "list_registration_codes_admin_codes_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/RegistrationCodeDetailResponse" },
+                  "type": "array",
+                  "title": "Response List Registration Codes Admin Codes Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/codes/generate": {
+      "post": {
+        "tags": ["Invite Codes"],
+        "summary": "Generate Code",
+        "description": "Generate a new invite code.\n\nAll authenticated users can generate codes.\nNon-admin users are limited to their `max_invite_codes` active codes.",
+        "operationId": "generate_code_codes_generate_post",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/GenerateCodeRequest" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RegistrationCodeResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/codes/": {
+      "get": {
+        "tags": ["Invite Codes"],
+        "summary": "List Codes",
+        "description": "List invite codes.\n\n- Regular users: see only their own codes\n- Admins: see all codes",
+        "operationId": "list_codes_codes__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/RegistrationCodeDetailResponse" },
+                  "type": "array",
+                  "title": "Response List Codes Codes  Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/codes/{code_id}": {
+      "delete": {
+        "tags": ["Invite Codes"],
+        "summary": "Delete Code",
+        "description": "Delete an unused invite code.\n\n- Regular users can only delete their own unused codes.\n- Admins can delete any unused code.\n- Used codes cannot be deleted (history preservation).",
+        "operationId": "delete_code_codes__code_id__delete",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "code_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Code Id" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Successful Response" },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instances/": {
+      "get": {
+        "tags": ["instances"],
+        "summary": "List Instances",
+        "description": "List instances — admin sees all, users see their own.",
+        "operationId": "list_instances_instances__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/InstanceResponse" },
+                  "type": "array",
+                  "title": "Response List Instances Instances  Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      },
+      "post": {
+        "tags": ["instances"],
+        "summary": "Create Instance",
+        "description": "Create a new instance (DB record only, no container started).",
+        "operationId": "create_instance_instances__post",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/InstanceCreate" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/InstanceResponse" } }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/instances/{instance_id}": {
+      "get": {
+        "tags": ["instances"],
+        "summary": "Get Instance",
+        "operationId": "get_instance_instances__instance_id__get",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/InstanceResponse" } }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["instances"],
+        "summary": "Delete Instance",
+        "description": "Stop container (if running), delete DB record and data directory.",
+        "operationId": "delete_instance_instances__instance_id__delete",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Successful Response" },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instances/{instance_id}/start": {
+      "post": {
+        "tags": ["instances"],
+        "summary": "Start Instance",
+        "description": "Start the Docker container for an instance.",
+        "operationId": "start_instance_instances__instance_id__start_post",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/InstanceStatus" } }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instances/{instance_id}/stop": {
+      "post": {
+        "tags": ["instances"],
+        "summary": "Stop Instance",
+        "description": "Stop the container. Blocks until fully stopped.",
+        "operationId": "stop_instance_instances__instance_id__stop_post",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/InstanceStatus" } }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instances/{instance_id}/status": {
+      "get": {
+        "tags": ["instances"],
+        "summary": "Instance Status",
+        "description": "Live-check container status against Docker runtime, then return DB state.",
+        "operationId": "instance_status_instances__instance_id__status_get",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/InstanceStatus" } }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instances/{instance_id}/logs": {
+      "get": {
+        "tags": ["instances"],
+        "summary": "Stream Logs",
+        "description": "SSE endpoint — streams instance logs in real-time via docker logs.\nPass full=true to load the entire log history instead of the last `tail` lines.\n\nThe DB session is intentionally closed before streaming starts so that no\nconnection-pool slot is held for the (potentially unbounded) stream duration.\n\ncurl:  curl -N -H \"Authorization: Bearer <token>\" http://localhost:8000/api/instances/{id}/logs",
+        "operationId": "stream_logs_instances__instance_id__logs_get",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "tail",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "minimum": 1, "default": 100, "title": "Tail" }
+          },
+          {
+            "name": "full",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "boolean", "default": false, "title": "Full" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instances/{instance_id}/streamers": {
+      "get": {
+        "tags": ["instances"],
+        "summary": "Get Streamers",
+        "description": "Get the streamer list for a V2 instance.",
+        "operationId": "get_streamers_instances__instance_id__streamers_get",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["instances"],
+        "summary": "Update Streamers",
+        "description": "Update the streamer list. Restart the instance for changes to take effect.",
+        "operationId": "update_streamers_instances__instance_id__streamers_put",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/StreamersUpdate" } }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instances/{instance_id}/points": {
+      "get": {
+        "tags": ["instances"],
+        "summary": "Get Instance Points Route",
+        "description": "Latest channel points per streamer for a V2 instance.",
+        "operationId": "get_instance_points_route_instances__instance_id__points_get",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/StreamerPointsSnapshot" },
+                  "title": "Response Get Instance Points Route Instances  Instance Id  Points Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instances/{instance_id}/ui": {
+      "get": {
+        "tags": ["proxy"],
+        "summary": "Proxy Http",
+        "description": "Proxy HTTP requests to the Docker container's web UI.",
+        "operationId": "proxy_http_get_root",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "", "title": "Path" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["proxy"],
+        "summary": "Proxy Http",
+        "description": "Proxy HTTP requests to the Docker container's web UI.",
+        "operationId": "proxy_http_post_root",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "", "title": "Path" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["proxy"],
+        "summary": "Proxy Http",
+        "description": "Proxy HTTP requests to the Docker container's web UI.",
+        "operationId": "proxy_http_put_root",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "", "title": "Path" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["proxy"],
+        "summary": "Proxy Http",
+        "description": "Proxy HTTP requests to the Docker container's web UI.",
+        "operationId": "proxy_http_patch_root",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "", "title": "Path" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["proxy"],
+        "summary": "Proxy Http",
+        "description": "Proxy HTTP requests to the Docker container's web UI.",
+        "operationId": "proxy_http_delete_root",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "", "title": "Path" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "options": {
+        "tags": ["proxy"],
+        "summary": "Proxy Http",
+        "description": "Proxy HTTP requests to the Docker container's web UI.",
+        "operationId": "proxy_http_options_root",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "", "title": "Path" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "tags": ["proxy"],
+        "summary": "Proxy Http",
+        "description": "Proxy HTTP requests to the Docker container's web UI.",
+        "operationId": "proxy_http_head_root",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "default": "", "title": "Path" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/instances/{instance_id}/ui/{path}": {
+      "get": {
+        "tags": ["proxy"],
+        "summary": "Proxy Http",
+        "description": "Proxy HTTP requests to the Docker container's web UI.",
+        "operationId": "proxy_http_get",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Path" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["proxy"],
+        "summary": "Proxy Http",
+        "description": "Proxy HTTP requests to the Docker container's web UI.",
+        "operationId": "proxy_http_post",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Path" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["proxy"],
+        "summary": "Proxy Http",
+        "description": "Proxy HTTP requests to the Docker container's web UI.",
+        "operationId": "proxy_http_put",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Path" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["proxy"],
+        "summary": "Proxy Http",
+        "description": "Proxy HTTP requests to the Docker container's web UI.",
+        "operationId": "proxy_http_patch",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Path" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["proxy"],
+        "summary": "Proxy Http",
+        "description": "Proxy HTTP requests to the Docker container's web UI.",
+        "operationId": "proxy_http_delete",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Path" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "options": {
+        "tags": ["proxy"],
+        "summary": "Proxy Http",
+        "description": "Proxy HTTP requests to the Docker container's web UI.",
+        "operationId": "proxy_http_options",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Path" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "head": {
+        "tags": ["proxy"],
+        "summary": "Proxy Http",
+        "description": "Proxy HTTP requests to the Docker container's web UI.",
+        "operationId": "proxy_http_head",
+        "parameters": [
+          {
+            "name": "instance_id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Instance Id" }
+          },
+          {
+            "name": "path",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Path" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Root",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": { "application/json": { "schema": {} } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Body_login_auth_token_post": {
+        "properties": {
+          "grant_type": {
+            "anyOf": [{ "type": "string", "pattern": "^password$" }, { "type": "null" }],
+            "title": "Grant Type"
+          },
+          "username": { "type": "string", "title": "Username" },
+          "password": { "type": "string", "format": "password", "title": "Password" },
+          "scope": { "type": "string", "title": "Scope", "default": "" },
+          "client_id": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Client Id"
+          },
+          "client_secret": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "format": "password",
+            "title": "Client Secret"
+          }
+        },
+        "type": "object",
+        "required": ["username", "password"],
+        "title": "Body_login_auth_token_post"
+      },
+      "ChangePasswordRequest": {
+        "properties": {
+          "current_password": { "type": "string", "title": "Current Password" },
+          "new_password": { "type": "string", "title": "New Password" }
+        },
+        "type": "object",
+        "required": ["current_password", "new_password"],
+        "title": "ChangePasswordRequest"
+      },
+      "GenerateCodeRequest": {
+        "properties": {
+          "expires_in_hours": { "type": "integer", "title": "Expires In Hours", "default": 24 }
+        },
+        "type": "object",
+        "title": "GenerateCodeRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": { "$ref": "#/components/schemas/ValidationError" },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "InstanceCreate": {
+        "properties": {
+          "miner_type": { "$ref": "#/components/schemas/MinerType", "default": "TwitchDropsMiner" },
+          "twitch_username": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Twitch Username"
+          },
+          "streamers": {
+            "items": { "type": "string" },
+            "type": "array",
+            "title": "Streamers",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "InstanceCreate"
+      },
+      "InstanceResponse": {
+        "properties": {
+          "id": { "type": "string", "title": "Id" },
+          "user_id": { "type": "string", "title": "User Id" },
+          "miner_type": { "$ref": "#/components/schemas/MinerType" },
+          "status": { "$ref": "#/components/schemas/InstanceState" },
+          "container_id": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Container Id"
+          },
+          "port": { "anyOf": [{ "type": "integer" }, { "type": "null" }], "title": "Port" },
+          "ui_url": { "anyOf": [{ "type": "string" }, { "type": "null" }], "title": "Ui Url" },
+          "twitch_username": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Twitch Username"
+          },
+          "activation_code": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Activation Code"
+          },
+          "activation_url": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Activation Url"
+          },
+          "streamers": {
+            "items": { "type": "string" },
+            "type": "array",
+            "title": "Streamers",
+            "default": []
+          },
+          "created_at": { "type": "string", "format": "date-time", "title": "Created At" },
+          "last_started_at": {
+            "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }],
+            "title": "Last Started At"
+          },
+          "last_stopped_at": {
+            "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }],
+            "title": "Last Stopped At"
+          }
+        },
+        "type": "object",
+        "required": ["id", "user_id", "miner_type", "status", "created_at"],
+        "title": "InstanceResponse"
+      },
+      "InstanceState": {
+        "type": "string",
+        "enum": ["stopped", "running", "stopping"],
+        "title": "InstanceState",
+        "description": "Miner instance lifecycle states."
+      },
+      "InstanceStatus": {
+        "properties": {
+          "id": { "type": "string", "title": "Id" },
+          "status": { "$ref": "#/components/schemas/InstanceState" },
+          "container_id": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Container Id"
+          },
+          "port": { "anyOf": [{ "type": "integer" }, { "type": "null" }], "title": "Port" },
+          "activation_url": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Activation Url"
+          },
+          "activation_code": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Activation Code"
+          }
+        },
+        "type": "object",
+        "required": ["id", "status"],
+        "title": "InstanceStatus"
+      },
+      "MinerType": {
+        "type": "string",
+        "enum": ["TwitchDropsMiner", "TwitchPointsMinerV2"],
+        "title": "MinerType",
+        "description": "Miner implementation type."
+      },
+      "RegisterRequest": {
+        "properties": {
+          "username": { "type": "string", "title": "Username" },
+          "password": { "type": "string", "title": "Password" },
+          "registration_code": { "type": "string", "title": "Registration Code" }
+        },
+        "type": "object",
+        "required": ["username", "password", "registration_code"],
+        "title": "RegisterRequest"
+      },
+      "RegistrationCodeDetailResponse": {
+        "properties": {
+          "id": { "type": "string", "title": "Id" },
+          "code": { "type": "string", "title": "Code" },
+          "created_at": { "type": "string", "format": "date-time", "title": "Created At" },
+          "expires_at": { "type": "string", "format": "date-time", "title": "Expires At" },
+          "used_at": {
+            "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }],
+            "title": "Used At"
+          },
+          "used_by": { "anyOf": [{ "type": "string" }, { "type": "null" }], "title": "Used By" },
+          "created_by_username": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Created By Username"
+          },
+          "is_valid": { "type": "boolean", "title": "Is Valid" }
+        },
+        "type": "object",
+        "required": ["id", "code", "created_at", "expires_at", "used_at", "used_by", "is_valid"],
+        "title": "RegistrationCodeDetailResponse"
+      },
+      "RegistrationCodeResponse": {
+        "properties": {
+          "code": { "type": "string", "title": "Code" },
+          "created_at": { "type": "string", "format": "date-time", "title": "Created At" },
+          "expires_at": { "type": "string", "format": "date-time", "title": "Expires At" }
+        },
+        "type": "object",
+        "required": ["code", "created_at", "expires_at"],
+        "title": "RegistrationCodeResponse"
+      },
+      "StreamerPointsSnapshot": {
+        "properties": {
+          "streamer": { "type": "string", "title": "Streamer" },
+          "channel_points": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Channel Points"
+          }
+        },
+        "type": "object",
+        "required": ["streamer", "channel_points"],
+        "title": "StreamerPointsSnapshot"
+      },
+      "StreamersUpdate": {
+        "properties": {
+          "streamers": { "items": { "type": "string" }, "type": "array", "title": "Streamers" }
+        },
+        "type": "object",
+        "required": ["streamers"],
+        "title": "StreamersUpdate"
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": { "type": "string", "title": "Access Token" },
+          "token_type": { "type": "string", "title": "Token Type", "default": "bearer" },
+          "user_id": { "type": "string", "title": "User Id" },
+          "username": { "type": "string", "title": "Username" }
+        },
+        "type": "object",
+        "required": ["access_token", "user_id", "username"],
+        "title": "TokenResponse"
+      },
+      "UpdateInviteLimitRequest": {
+        "properties": { "max_invite_codes": { "type": "integer", "title": "Max Invite Codes" } },
+        "type": "object",
+        "required": ["max_invite_codes"],
+        "title": "UpdateInviteLimitRequest"
+      },
+      "UpdateUserRoleRequest": {
+        "properties": { "role": { "$ref": "#/components/schemas/UserRole" } },
+        "type": "object",
+        "required": ["role"],
+        "title": "UpdateUserRoleRequest"
+      },
+      "UserResponse": {
+        "properties": {
+          "id": { "type": "string", "title": "Id" },
+          "username": { "type": "string", "title": "Username" },
+          "role": { "$ref": "#/components/schemas/UserRole" },
+          "created_at": { "type": "string", "format": "date-time", "title": "Created At" },
+          "max_invite_codes": { "type": "integer", "title": "Max Invite Codes", "default": 2 }
+        },
+        "type": "object",
+        "required": ["id", "username", "role", "created_at"],
+        "title": "UserResponse"
+      },
+      "UserRole": {
+        "type": "string",
+        "enum": ["admin", "user"],
+        "title": "UserRole",
+        "description": "User role enumeration."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": { "anyOf": [{ "type": "string" }, { "type": "integer" }] },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": { "type": "string", "title": "Message" },
+          "type": { "type": "string", "title": "Error Type" },
+          "input": { "title": "Input" },
+          "ctx": { "type": "object", "title": "Context" }
+        },
+        "type": "object",
+        "required": ["loc", "msg", "type"],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "OAuth2PasswordBearer": {
+        "type": "oauth2",
+        "flows": { "password": { "scopes": {}, "tokenUrl": "auth/token" } }
+      }
+    }
+  }
+}

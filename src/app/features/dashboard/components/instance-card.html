@@ -1,0 +1,344 @@
+@if (compact()) {
+  <!-- Compact row for admin view -->
+  <div
+    [class]="
+      'flex items-center gap-4 rounded-xl border px-4 py-3 transition-colors duration-150 ' +
+      (isRunning() ? 'border-twitch/20 bg-gray-900/80' : 'border-gray-800 bg-gray-900/50')
+    "
+  >
+    <!-- Status indicator -->
+    <div class="flex items-center">
+      <span
+        class="sm:hidden flex h-8 w-8 items-center justify-center"
+        [attr.aria-label]="stopping() ? 'Stopping' : isRunning() ? 'Running' : 'Stopped'"
+      >
+        @if (stopping()) {
+          <app-loading-spinner size="xs" color="yellow" />
+        } @else {
+          <span
+            [class]="
+              'h-3 w-3 rounded-full ' +
+              (isRunning() ? 'bg-green-400 shadow-lg shadow-green-400/50' : 'bg-gray-500')
+            "
+          ></span>
+        }
+      </span>
+      <app-status-badge
+        [running]="isRunning()"
+        [stopping]="stopping()"
+        class="hidden sm:inline-flex"
+      />
+    </div>
+
+    <div class="min-w-0 flex-1">
+      <div class="flex items-center gap-2">
+        <a
+          [routerLink]="['/instances', instance().id]"
+          class="truncate text-sm font-semibold transition-colors duration-150 underline decoration-gray-700 underline-offset-2 hover:decoration-twitch-light/50"
+          [class]="
+            isRunning() ? 'gradient-text hover:opacity-80' : 'text-gray-200 hover:text-twitch-light'
+          "
+        >
+          {{
+            !isTwitchDropsMiner() && instance().twitch_username
+              ? instance().twitch_username
+              : instance().id.slice(0, 8)
+          }}
+        </a>
+        <a
+          [href]="
+            isTwitchDropsMiner()
+              ? 'https://github.com/rangermix/TwitchDropsMiner'
+              : 'https://github.com/rdavydov/Twitch-Channel-Points-Miner-v2'
+          "
+          target="_blank"
+          rel="noopener"
+          class="shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold leading-none transition-opacity hover:opacity-70"
+          [class]="isTwitchDropsMiner() ? 'bg-blue-900/50 text-blue-300' : 'bg-orange-900/50 text-orange-300'"
+          >{{ isTwitchDropsMiner() ? 'Docker' : 'Miner V2' }}</a
+        >
+      </div>
+      @if (ownerName()) {
+        <span class="block truncate text-xs text-gray-500">
+          <svg
+            class="inline-block h-3 w-3 mr-0.5 -mt-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+            />
+          </svg>
+          {{ ownerName() }}
+        </span>
+      }
+    </div>
+
+    <!-- Uptime -->
+    <div class="hidden md:block">
+      <app-uptime-timer
+        [startedAt]="instance().last_started_at ?? null"
+        [isRunning]="isRunning()"
+      />
+    </div>
+
+    <!-- Actions -->
+    <div class="flex items-center gap-1.5">
+      @if (isRunning() || stopping()) {
+        <button
+          (click)="stop.emit()"
+          [disabled]="actionLoading() || stopping()"
+          class="rounded-lg bg-red-900/40 border border-red-700/30 px-3 py-1.5 text-xs font-bold text-red-300 transition-all hover:bg-red-900/70 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          @if (actionLoading() || stopping()) {
+            <span class="flex items-center gap-1.5">
+              <app-loading-spinner size="xs" color="red" />
+              Stopping…
+            </span>
+          } @else {
+            Stop
+          }
+        </button>
+      } @else {
+        <button
+          (click)="start.emit()"
+          [disabled]="actionLoading()"
+          class="rounded-lg bg-green-900/40 border border-green-700/30 px-3 py-1.5 text-xs font-bold text-green-300 transition-all hover:bg-green-900/70 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          @if (actionLoading()) {
+            <span class="flex items-center gap-1.5">
+              <app-loading-spinner size="xs" color="green" />
+              Starting…
+            </span>
+          } @else {
+            Start
+          }
+        </button>
+      }
+      <a
+        [routerLink]="['/instances', instance().id]"
+        class="rounded-lg bg-twitch/80 border border-twitch-light/20 px-3 py-1.5 text-xs font-bold text-white transition-all hover:bg-twitch active:scale-95"
+      >
+        Details
+      </a>
+      <button
+        (click)="delete.emit()"
+        [disabled]="actionLoading()"
+        class="rounded-lg bg-gray-800/70 border border-gray-700/50 p-1.5 text-gray-400 transition-all hover:bg-gray-700 hover:text-red-400 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+        title="Delete instance"
+      >
+        <svg
+          class="h-4 w-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+          />
+        </svg>
+      </button>
+    </div>
+  </div>
+} @else {
+  <!-- Full card for user view -->
+  <div
+    [class]="
+      'relative rounded-2xl border overflow-visible transition-all duration-300 ' +
+      (isRunning()
+        ? 'border-twitch/30 bg-gradient-to-br from-gray-900 via-gray-900 to-twitch/5 shadow-xl shadow-twitch/10'
+        : 'border-gray-800 bg-gray-900')
+    "
+  >
+    <!-- Type badge — top-right corner -->
+    <a
+      [href]="
+        isTwitchDropsMiner()
+          ? 'https://github.com/rangermix/TwitchDropsMiner'
+          : 'https://github.com/rdavydov/Twitch-Channel-Points-Miner-v2'
+      "
+      target="_blank"
+      rel="noopener"
+      class="absolute -top-4 right-3 z-10 rounded px-2 py-0.5 text-[10px] font-semibold border transition-opacity hover:opacity-70"
+      [class]="
+        isTwitchDropsMiner()
+          ? 'bg-blue-950 border-blue-700/60 text-blue-300'
+          : 'bg-orange-950 border-orange-700/60 text-orange-300'
+      "
+      >{{ isTwitchDropsMiner() ? 'Docker' : 'Twitch Miner V2' }}</a
+    >
+
+    <!-- Running accent line -->
+    @if (isRunning()) {
+      <div
+        class="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-twitch/80 to-transparent"
+      ></div>
+    }
+
+    <!-- Main content -->
+    <div class="p-4">
+      <!-- Header: name/meta left — buttons right -->
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <!-- Left: Name + ID + type badge + uptime -->
+        <div class="min-w-0 flex-1">
+          <a
+            [routerLink]="['/instances', instance().id]"
+            class="block text-xl font-bold font-mono truncate transition-all duration-200 underline decoration-gray-700 underline-offset-2 hover:decoration-twitch-light/50"
+            [class]="
+              isRunning()
+                ? 'gradient-text hover:opacity-80'
+                : 'text-gray-100 hover:text-twitch-light'
+            "
+          >
+            {{
+              !isTwitchDropsMiner() && instance().twitch_username
+                ? instance().twitch_username
+                : instance().id.slice(0, 12)
+            }}
+          </a>
+          <p class="text-[11px] text-gray-600 font-mono mt-0.5 truncate">{{ instance().id }}</p>
+        </div>
+
+        <!-- Right: Start/Stop + Delete -->
+        <div class="flex items-center gap-2 shrink-0">
+          <app-uptime-timer
+            [startedAt]="instance().last_started_at ?? null"
+            [isRunning]="isRunning()"
+          />
+          @if (isRunning() || stopping()) {
+            <button
+              (click)="stop.emit()"
+              [disabled]="actionLoading() || stopping()"
+              class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-red-900/50 to-red-800/50 border border-red-700/30 px-3 py-2 text-xs font-bold text-red-300 transition-all duration-200 hover:from-red-900 hover:to-red-800 hover:shadow-lg hover:shadow-red-900/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              @if (actionLoading() || stopping()) {
+                <app-loading-spinner size="xs" color="red" />
+                Stopping…
+              } @else {
+                <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="4" y="4" width="16" height="16" rx="2" />
+                </svg>
+                Stop
+              }
+            </button>
+          } @else {
+            <button
+              (click)="start.emit()"
+              [disabled]="actionLoading()"
+              class="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-green-900/50 to-emerald-900/50 border border-green-700/30 px-3 py-2 text-xs font-bold text-green-300 transition-all duration-200 hover:from-green-900 hover:to-emerald-900 hover:shadow-lg hover:shadow-green-900/30 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              @if (actionLoading()) {
+                <app-loading-spinner size="xs" color="green" />
+                Starting…
+              } @else {
+                <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path
+                    d="M6 4.75A.75.75 0 0 1 7.015 4l13 7.25a.75.75 0 0 1 0 1.5l-13 7.25A.75.75 0 0 1 6 19.25V4.75Z"
+                  />
+                </svg>
+                Start
+              }
+            </button>
+          }
+          <button
+            (click)="delete.emit()"
+            [disabled]="actionLoading()"
+            class="rounded-lg border border-gray-700/50 bg-gray-800/60 p-2 text-gray-500 transition-all hover:bg-gray-700 hover:text-red-400 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Delete instance"
+          >
+            <svg
+              class="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="1.5"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Activation Banner -->
+      @if (hasActivationCode()) {
+        <div class="mb-3 rounded-lg border border-yellow-600/30 bg-yellow-900/15 px-3 py-2">
+          <div class="flex items-center gap-2">
+            <span class="text-[10px] font-semibold text-yellow-400">Twitch Activation</span>
+            <span class="font-mono text-xs font-bold text-yellow-200">{{
+              instance().activation_code
+            }}</span>
+          </div>
+          <a
+            [href]="'https://www.twitch.tv/activate?device-code=' + instance().activation_code"
+            target="_blank"
+            rel="noopener"
+            class="mt-0.5 block text-xs text-yellow-500 underline hover:text-yellow-300"
+            >→ twitch.tv/activate</a
+          >
+        </div>
+      }
+
+      <!-- Miner UI (Docker, running) -->
+      @if (isRunning() && uiUrl()) {
+        <div class="relative mb-1 w-fit">
+          @if (isFirstStart()) {
+            <span
+              class="absolute -inset-0.5 rounded-lg bg-twitch/50 blur animate-pulse pointer-events-none"
+            ></span>
+          }
+          <a
+            [href]="uiUrl()!"
+            target="_blank"
+            rel="noopener"
+            class="relative inline-flex flex-col items-center justify-center rounded-lg bg-twitch/90 border border-twitch-light/30 px-3 py-1.5 font-bold text-white transition-all duration-200 hover:bg-twitch active:scale-95"
+          >
+            <span class="flex items-center gap-1.5 text-xs">
+              <svg
+                class="h-3.5 w-3.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"
+                />
+              </svg>
+              Open Miner UI
+            </span>
+            @if (isFirstStart()) {
+              <span class="text-[9px] font-normal text-white/70">Setup required</span>
+            }
+          </a>
+        </div>
+      }
+    </div>
+
+    <!-- Streamers (subprocess only) -->
+    @if (!isTwitchDropsMiner()) {
+      <div class="border-t border-gray-800/60 px-4 py-3">
+        <app-streamers-editor [instanceId]="instance().id" [streamers]="instance().streamers" />
+      </div>
+    }
+
+    <!-- Log viewer (Docker only when running) -->
+    @if (!isTwitchDropsMiner() || isRunning()) {
+      <div class="border-t border-gray-800/60">
+        <app-log-viewer [instanceId]="instance().id" [tail]="isTwitchDropsMiner() ? 100 : 1000" />
+      </div>
+    }
+  </div>
+}

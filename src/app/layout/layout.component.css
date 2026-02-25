@@ -1,0 +1,14 @@
+/* Side bar active indicator animation */
+@keyframes slideIn {
+  from {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-in-out;
+}
