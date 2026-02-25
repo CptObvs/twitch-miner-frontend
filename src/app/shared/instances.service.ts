@@ -1,8 +1,9 @@
-import { Injectable } from '@angular/core';
-import { defer, from, Observable, of, throwError, timer } from 'rxjs';
-import { catchError, filter, map, switchMap, take, takeWhile } from 'rxjs/operators';
+import { Injectable, inject } from '@angular/core';
+import { EMPTY, Observable, Subscription, defer, from, of, throwError } from 'rxjs';
+import { catchError, filter, map, switchMap } from 'rxjs/operators';
 import { api } from '../api/client';
 import type { components } from '../api/schema';
+import { SocketService } from './socket.service';
 
 type Instance = components['schemas']['InstanceResponse'];
 type InstanceStatus = components['schemas']['InstanceStatus'];
@@ -11,34 +12,39 @@ type StreamerPoints = components['schemas']['StreamerPointsSnapshot'];
 
 @Injectable({ providedIn: 'root' })
 export class InstancesService {
+  private socket = inject(SocketService);
+
   watchInstance$(
     id: string,
     onUpdate: (instance: Instance | null) => void,
     onError?: () => void,
   ): () => void {
-    let subscription = this.get$(id).subscribe({
-      next: (instance) => {
-        onUpdate(instance);
+    this.socket.connect();
 
-        if (instance?.status === 'stopping') {
-          subscription.unsubscribe();
-          subscription = this.pollWhileStopping$(id).subscribe({
-            next: onUpdate,
-            error: onError,
-          });
-        }
-      },
+    const initialSub = this.get$(id).subscribe({
+      next: onUpdate,
       error: onError,
     });
 
-    return () => subscription.unsubscribe();
+    // Live updates via Socket.IO — re-fetch full instance when a status update arrives
+    const socketSub = this.socket.instanceUpdates$
+      .pipe(
+        filter((update) => update.id === id),
+        switchMap(() => this.get$(id).pipe(catchError(() => of(null)))),
+      )
+      .subscribe({ next: onUpdate });
+
+    return () => {
+      initialSub.unsubscribe();
+      socketSub.unsubscribe();
+    };
   }
 
   watchInstances$(
     onUpdate: (instances: Instance[]) => void,
     onError?: (error: string) => void,
   ): () => void {
-    const subscriptions: (() => void)[] = [];
+    this.socket.connect();
     let currentInstances: Instance[] = [];
 
     const mainSub = this.list$()
@@ -47,49 +53,28 @@ export class InstancesService {
         next: (instances) => {
           currentInstances = instances;
           onUpdate(instances);
-
-          subscriptions.forEach((unsub) => unsub());
-          subscriptions.length = 0;
-
-          instances
-            .filter((inst) => inst.status === 'stopping')
-            .forEach((inst) => {
-              const unsub = this.watchInstanceUpdates$(inst.id, (updated) => {
-                if (updated) {
-                  const current = currentInstances.slice();
-                  const index = current.findIndex((i) => i.id === inst.id);
-                  if (index !== -1) {
-                    current[index] = updated;
-                    onUpdate(current);
-                  }
-                }
-              });
-              subscriptions.push(unsub);
-            });
         },
         error: (err) => {
           onError?.(err instanceof Error ? err.message : 'Failed to load instances');
         },
       });
 
-    return () => {
-      mainSub.unsubscribe();
-      subscriptions.forEach((unsub) => unsub());
-    };
-  }
-
-  private watchInstanceUpdates$(
-    id: string,
-    onUpdate: (instance: Instance | null) => void,
-  ): () => void {
-    const subscription = this.pollWhileStopping$(id).subscribe({
-      next: onUpdate,
-      error: () => {
-        /* ignore errors during polling */
-      },
+    // Merge partial status updates from Socket.IO into the cached list
+    const socketSub = this.socket.instanceUpdates$.subscribe((update) => {
+      const idx = currentInstances.findIndex((i) => i.id === update.id);
+      if (idx !== -1) {
+        const merged = { ...currentInstances[idx], ...update } as Instance;
+        const newList = [...currentInstances];
+        newList[idx] = merged;
+        currentInstances = newList;
+        onUpdate(currentInstances);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mainSub.unsubscribe();
+      socketSub.unsubscribe();
+    };
   }
 
   list$(): Observable<Instance[]> {
@@ -199,12 +184,8 @@ export class InstancesService {
     ).pipe(
       switchMap(({ data, error }) => {
         if (error || !data) return of(null);
-
-        if (data.status === 'running') {
-          return this.get$(id);
-        }
-
-        return this.pollUntilStatus$(id, 'running');
+        // Backend always returns running immediately after docker run -d
+        return this.get$(id);
       }),
       catchError(() => of(null)),
     );
@@ -231,36 +212,6 @@ export class InstancesService {
           catchError(() => of(null)),
         ),
       ),
-    );
-  }
-
-  pollWhileStopping$(id: string): Observable<Instance | null> {
-    return timer(0, 2000).pipe(
-      switchMap(() => this.get$(id)),
-      filter((instance): instance is Instance => instance !== null),
-      takeWhile((instance) => instance.status === 'stopping', true),
-      take(30),
-    );
-  }
-
-  private pollUntilStatus$(
-    id: string,
-    expectedStatus: 'running' | 'stopped',
-  ): Observable<Instance | null> {
-    return timer(0, 500).pipe(
-      switchMap(() => this.getStatus$(id)),
-      filter((status): status is InstanceStatus => status !== null),
-      takeWhile((status) => status.status !== expectedStatus, true),
-      take(12),
-      switchMap((status) => {
-        if (status.status === expectedStatus) {
-          return this.get$(id);
-        }
-        return of(null);
-      }),
-      filter((instance): instance is Instance => instance !== null),
-      take(1),
-      catchError(() => of(null)),
     );
   }
 }

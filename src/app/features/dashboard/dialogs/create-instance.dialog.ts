@@ -72,12 +72,31 @@ type MinerType = components['schemas']['MinerType'];
             </button>
           </div>
 
-          <!-- Twitch Drops Miner info -->
+          <!-- Miner type description -->
           @if (minerType() === 'TwitchDropsMiner') {
-            <p class="text-xs text-gray-500 text-center">
-              Configuration and setup is managed via the
-              <span class="text-gray-400 font-medium">Miner UI</span> after the first start.
-            </p>
+            <div class="rounded-xl border border-gray-700/40 bg-gray-800/40 p-3.5 space-y-2">
+              <p class="text-xs text-gray-300 leading-relaxed">
+                Claim <span class="text-twitch-light font-medium">game-specific drops</span> automatically while watching
+                supported Twitch streams. Fully managed through the built-in
+                <span class="text-gray-200 font-medium">Miner UI</span> — no manual configuration needed before the
+                first start.
+              </p>
+              <p class="text-xs text-gray-500 leading-relaxed">
+                After starting, open the instance UI to link your Twitch account and select which games to farm.
+              </p>
+            </div>
+          }
+
+          @if (minerType() === 'TwitchPointsMinerV2') {
+            <div class="rounded-xl border border-gray-700/40 bg-gray-800/40 p-3.5 space-y-2">
+              <p class="text-xs text-gray-300 leading-relaxed">
+                Farm <span class="text-twitch-light font-medium">channel points</span> and claim drops on a
+                <span class="text-gray-200 font-medium">per-streamer basis</span>. Configure target streamers directly
+                here and manage the instance via the same UI. Also includes a
+                <span class="text-gray-200 font-medium">betting system</span> that will be fully configurable in a
+                future update.
+              </p>
+            </div>
           }
 
           <!-- Twitch Points Miner V2 fields -->
