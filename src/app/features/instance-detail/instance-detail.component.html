@@ -54,7 +54,9 @@
                 rel="noopener"
                 class="rounded-md px-1.5 py-0.5 text-[10px] font-semibold transition-opacity hover:opacity-70"
                 [class]="
-                  isTwitchDropsMiner() ? 'bg-blue-900/40 text-blue-300' : 'bg-orange-900/40 text-orange-300'
+                  isTwitchDropsMiner()
+                    ? 'bg-blue-900/40 text-blue-300'
+                    : 'bg-orange-900/40 text-orange-300'
                 "
               >
                 {{ isTwitchDropsMiner() ? 'Docker' : 'Twitch Miner V2' }}

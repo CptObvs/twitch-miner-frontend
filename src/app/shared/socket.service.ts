@@ -21,8 +21,7 @@ export class SocketService implements OnDestroy {
   private socket: Socket | null = null;
   private instanceUpdate$ = new Subject<InstanceStatusUpdate>();
 
-  readonly instanceUpdates$: Observable<InstanceStatusUpdate> =
-    this.instanceUpdate$.asObservable();
+  readonly instanceUpdates$: Observable<InstanceStatusUpdate> = this.instanceUpdate$.asObservable();
 
   connect(): void {
     if (this.socket?.connected) return;

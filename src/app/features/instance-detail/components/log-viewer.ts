@@ -40,7 +40,7 @@ const FILTER_MATCH: Record<Exclude<LogFilter, 'all'>, (line: string) => boolean>
     l.includes('ERROR') ||
     l.includes('Exception') ||
     l.includes('Traceback') ||
-    /^\s+File "/.test(l) ||   // Python traceback frames: "  File "path", line N"
+    /^\s+File "/.test(l) || // Python traceback frames: "  File "path", line N"
     /^\w+Error[:\s]/.test(l), // TypeError:, ValueError:, AttributeError, etc.
 };
 

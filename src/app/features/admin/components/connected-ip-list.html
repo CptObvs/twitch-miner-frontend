@@ -1,0 +1,48 @@
+<div class="overflow-x-auto">
+  <table class="w-full text-left text-sm">
+    <thead class="sticky top-0 bg-gray-900 backdrop-blur-sm z-10">
+      <tr class="border-b border-gray-700/50 text-xs text-gray-400 uppercase tracking-wider">
+        <th class="px-5 py-4 font-semibold">IP Address</th>
+        <th class="px-5 py-4 font-semibold">Country</th>
+        <th class="px-5 py-4 font-semibold">First Seen</th>
+        <th class="px-5 py-4 font-semibold">Last Seen</th>
+        <th class="px-5 py-4 font-semibold">Requests</th>
+        <th class="px-5 py-4 font-semibold">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @if (connectedIPs().length === 0) {
+        <tr>
+          <td colspan="6" class="px-5 py-10 text-center text-sm text-gray-500">
+            No connections recorded
+          </td>
+        </tr>
+      }
+      @for (entry of connectedIPs(); track entry.ip_address) {
+        <tr class="border-b border-gray-800/50 transition-colors duration-150 hover:bg-gray-800/30">
+          <td class="px-5 py-4 font-mono text-xs text-gray-200">{{ entry.ip_address }}</td>
+          <td class="px-5 py-4 text-sm text-gray-300">
+            @if (entry.country) {
+              <span class="flex items-center gap-1.5">
+                <span class="text-base leading-none">{{ flagEmoji(entry.country_code) }}</span>
+                <span class="text-xs">{{ entry.country }}</span>
+              </span>
+            } @else {
+              <span class="text-xs text-gray-600">—</span>
+            }
+          </td>
+          <td class="px-5 py-4 text-xs text-gray-400">{{ formatDate(entry.first_seen) }}</td>
+          <td class="px-5 py-4 text-xs text-gray-400">{{ formatDate(entry.last_seen) }}</td>
+          <td class="px-5 py-4">
+            <span class="rounded-full bg-gray-800 px-2.5 py-0.5 text-xs font-medium text-gray-300">
+              {{ entry.request_count }}
+            </span>
+          </td>
+          <td class="px-5 py-4">
+            <app-button variant="danger" (click)="banIP.emit(entry.ip_address)">Ban</app-button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

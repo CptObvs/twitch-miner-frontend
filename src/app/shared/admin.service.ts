@@ -7,6 +7,8 @@ import type { components } from '../api/schema';
 type User = components['schemas']['UserResponse'];
 type Code = components['schemas']['RegistrationCodeDetailResponse'];
 type Role = components['schemas']['UserRole'];
+type BannedIP = components['schemas']['BannedIPResponse'];
+type ConnectedIP = components['schemas']['ConnectedIPResponse'];
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
@@ -87,6 +89,56 @@ export class AdminService {
     ).pipe(
       map(({ error }) => {
         if (error) throw new Error('Failed to update role');
+      }),
+      catchError((err) => throwError(() => err)),
+    );
+  }
+
+  listBannedIPs$(): Observable<BannedIP[]> {
+    return defer(() => from(api.GET('/admin/banned-ips'))).pipe(
+      map(({ data, error }) => {
+        if (error) throw new Error('Failed to load banned IPs');
+        return data;
+      }),
+      catchError((err) => throwError(() => err)),
+    );
+  }
+
+  listConnectedIPs$(): Observable<ConnectedIP[]> {
+    return defer(() => from(api.GET('/admin/connected-ips'))).pipe(
+      map(({ data, error }) => {
+        if (error) throw new Error('Failed to load connected IPs');
+        return data;
+      }),
+      catchError((err) => throwError(() => err)),
+    );
+  }
+
+  banIP$(ip: string, durationHours: number): Observable<void> {
+    return defer(() =>
+      from(
+        api.POST('/admin/banned-ips', {
+          body: { ip_address: ip, duration_hours: durationHours },
+        }),
+      ),
+    ).pipe(
+      map(({ error }) => {
+        if (error) throw new Error('Failed to ban IP');
+      }),
+      catchError((err) => throwError(() => err)),
+    );
+  }
+
+  unbanIP$(ip: string): Observable<void> {
+    return defer(() =>
+      from(
+        api.DELETE('/admin/banned-ips/{ip}', {
+          params: { path: { ip } },
+        }),
+      ),
+    ).pipe(
+      map(({ error }) => {
+        if (error) throw new Error('Failed to unban IP');
       }),
       catchError((err) => throwError(() => err)),
     );

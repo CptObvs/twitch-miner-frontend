@@ -74,28 +74,68 @@ type MinerType = components['schemas']['MinerType'];
 
           <!-- Miner type description -->
           @if (minerType() === 'TwitchDropsMiner') {
-            <div class="rounded-xl border border-gray-700/40 bg-gray-800/40 p-3.5 space-y-2">
-              <p class="text-xs text-gray-300 leading-relaxed">
-                Claim <span class="text-twitch-light font-medium">game-specific drops</span> automatically while watching
-                supported Twitch streams. Fully managed through the built-in
-                <span class="text-gray-200 font-medium">Miner UI</span> — no manual configuration needed before the
-                first start.
+            <div class="rounded-xl border border-gray-700/40 bg-gray-800/40 p-3.5">
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-2.5">
+                Features
               </p>
-              <p class="text-xs text-gray-500 leading-relaxed">
-                After starting, open the instance UI to link your Twitch account and select which games to farm.
-              </p>
+              <ul class="space-y-1.5">
+                <li class="flex items-start gap-2">
+                  <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-twitch"></span>
+                  <span class="text-xs text-gray-300"
+                    >Claim
+                    <span class="text-gray-100 font-medium">game-specific drops</span>
+                    automatically</span
+                  >
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-twitch"></span>
+                  <span class="text-xs text-gray-300"
+                    >Managed via built-in
+                    <span class="text-gray-100 font-medium">Miner UI</span></span
+                  >
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-twitch"></span>
+                  <span class="text-xs text-gray-300">Detects new drop events automatically</span>
+                </li>
+              </ul>
             </div>
           }
 
           @if (minerType() === 'TwitchPointsMinerV2') {
-            <div class="rounded-xl border border-gray-700/40 bg-gray-800/40 p-3.5 space-y-2">
-              <p class="text-xs text-gray-300 leading-relaxed">
-                Farm <span class="text-twitch-light font-medium">channel points</span> and claim drops on a
-                <span class="text-gray-200 font-medium">per-streamer basis</span>. Configure target streamers directly
-                here and manage the instance via the same UI. Also includes a
-                <span class="text-gray-200 font-medium">betting system</span> that will be fully configurable in a
-                future update.
+            <div class="rounded-xl border border-gray-700/40 bg-gray-800/40 p-3.5">
+              <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-2.5">
+                Features
               </p>
+              <ul class="space-y-1.5">
+                <li class="flex items-start gap-2">
+                  <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-twitch"></span>
+                  <span class="text-xs text-gray-300"
+                    >Farm <span class="text-gray-100 font-medium">channel points</span> per
+                    streamer</span
+                  >
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-twitch"></span>
+                  <span class="text-xs text-gray-300"
+                    >Claim <span class="text-gray-100 font-medium">drops</span> while watching</span
+                  >
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-twitch"></span>
+                  <span class="text-xs text-gray-300"
+                    >Ideal for <span class="text-gray-100 font-medium">lurking</span> specific
+                    streamers</span
+                  >
+                </li>
+                <li class="flex items-start gap-2">
+                  <span class="mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full bg-twitch/50"></span>
+                  <span class="text-xs text-gray-500"
+                    ><span class="text-gray-400 font-medium">Betting system</span> — configurable in
+                    a future update</span
+                  >
+                </li>
+              </ul>
             </div>
           }
 
@@ -122,7 +162,7 @@ type MinerType = components['schemas']['MinerType'];
                 <input
                   type="text"
                   [(ngModel)]="streamersVal"
-                  placeholder="streamer1, streamer2, …"
+                  placeholder="xqc, theburntpeanut, …"
                   class="w-full rounded-lg border border-gray-700/50 bg-gray-800/50 px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-twitch/50 focus:outline-none focus:ring-1 focus:ring-twitch/30"
                 />
               </div>

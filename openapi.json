@@ -286,6 +286,126 @@
         "security": [{ "OAuth2PasswordBearer": [] }]
       }
     },
+    "/admin/banned-ips": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List Banned Ips",
+        "description": "List all currently active IP bans.\n\nOnly ADMIN users can access this endpoint.",
+        "operationId": "list_banned_ips_admin_banned_ips_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/BannedIPResponse" },
+                  "type": "array",
+                  "title": "Response List Banned Ips Admin Banned Ips Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      },
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Ban Ip",
+        "description": "Manually ban an IP for the given number of hours.\n\nOnly ADMIN users can access this endpoint.",
+        "operationId": "ban_ip_admin_banned_ips_post",
+        "requestBody": {
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/ManualBanRequest" } }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Ban Ip Admin Banned Ips Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
+    "/admin/banned-ips/{ip}": {
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Unban Ip",
+        "description": "Remove an active IP ban.\n\nOnly ADMIN users can access this endpoint.",
+        "operationId": "unban_ip_admin_banned_ips__ip__delete",
+        "security": [{ "OAuth2PasswordBearer": [] }],
+        "parameters": [
+          {
+            "name": "ip",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string", "title": "Ip" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Unban Ip Admin Banned Ips  Ip  Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/connected-ips": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List Connected Ips",
+        "description": "List all unique IPs that have ever connected, ordered by most recent activity.\n\nOnly ADMIN users can access this endpoint.",
+        "operationId": "list_connected_ips_admin_connected_ips_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": { "$ref": "#/components/schemas/ConnectedIPResponse" },
+                  "type": "array",
+                  "title": "Response List Connected Ips Admin Connected Ips Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [{ "OAuth2PasswordBearer": [] }]
+      }
+    },
     "/codes/generate": {
       "post": {
         "tags": ["Invite Codes"],
@@ -1236,6 +1356,17 @@
   },
   "components": {
     "schemas": {
+      "BannedIPResponse": {
+        "properties": {
+          "ip_address": { "type": "string", "title": "Ip Address" },
+          "banned_at": { "type": "string", "format": "date-time", "title": "Banned At" },
+          "banned_until": { "type": "string", "format": "date-time", "title": "Banned Until" },
+          "hit_count": { "type": "integer", "title": "Hit Count" }
+        },
+        "type": "object",
+        "required": ["ip_address", "banned_at", "banned_until", "hit_count"],
+        "title": "BannedIPResponse"
+      },
       "Body_login_auth_token_post": {
         "properties": {
           "grant_type": {
@@ -1267,6 +1398,29 @@
         "type": "object",
         "required": ["current_password", "new_password"],
         "title": "ChangePasswordRequest"
+      },
+      "ConnectedIPResponse": {
+        "properties": {
+          "ip_address": { "type": "string", "title": "Ip Address" },
+          "country": { "anyOf": [{ "type": "string" }, { "type": "null" }], "title": "Country" },
+          "country_code": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Country Code"
+          },
+          "first_seen": { "type": "string", "format": "date-time", "title": "First Seen" },
+          "last_seen": { "type": "string", "format": "date-time", "title": "Last Seen" },
+          "request_count": { "type": "integer", "title": "Request Count" }
+        },
+        "type": "object",
+        "required": [
+          "ip_address",
+          "country",
+          "country_code",
+          "first_seen",
+          "last_seen",
+          "request_count"
+        ],
+        "title": "ConnectedIPResponse"
       },
       "GenerateCodeRequest": {
         "properties": {
@@ -1374,6 +1528,15 @@
         "type": "object",
         "required": ["id", "status"],
         "title": "InstanceStatus"
+      },
+      "ManualBanRequest": {
+        "properties": {
+          "ip_address": { "type": "string", "title": "Ip Address" },
+          "duration_hours": { "type": "integer", "title": "Duration Hours", "default": 24 }
+        },
+        "type": "object",
+        "required": ["ip_address"],
+        "title": "ManualBanRequest"
       },
       "MinerType": {
         "type": "string",

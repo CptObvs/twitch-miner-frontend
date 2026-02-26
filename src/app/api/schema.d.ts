@@ -215,6 +215,78 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/admin/banned-ips': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Banned Ips
+     * @description List all currently active IP bans.
+     *
+     *     Only ADMIN users can access this endpoint.
+     */
+    get: operations['list_banned_ips_admin_banned_ips_get'];
+    put?: never;
+    /**
+     * Ban Ip
+     * @description Manually ban an IP for the given number of hours.
+     *
+     *     Only ADMIN users can access this endpoint.
+     */
+    post: operations['ban_ip_admin_banned_ips_post'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/banned-ips/{ip}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Unban Ip
+     * @description Remove an active IP ban.
+     *
+     *     Only ADMIN users can access this endpoint.
+     */
+    delete: operations['unban_ip_admin_banned_ips__ip__delete'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/admin/connected-ips': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List Connected Ips
+     * @description List all unique IPs that have ever connected, ordered by most recent activity.
+     *
+     *     Only ADMIN users can access this endpoint.
+     */
+    get: operations['list_connected_ips_admin_connected_ips_get'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/codes/generate': {
     parameters: {
       query?: never;
@@ -586,6 +658,23 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /** BannedIPResponse */
+    BannedIPResponse: {
+      /** Ip Address */
+      ip_address: string;
+      /**
+       * Banned At
+       * Format: date-time
+       */
+      banned_at: string;
+      /**
+       * Banned Until
+       * Format: date-time
+       */
+      banned_until: string;
+      /** Hit Count */
+      hit_count: number;
+    };
     /** Body_login_auth_token_post */
     Body_login_auth_token_post: {
       /** Grant Type */
@@ -616,6 +705,27 @@ export interface components {
       current_password: string;
       /** New Password */
       new_password: string;
+    };
+    /** ConnectedIPResponse */
+    ConnectedIPResponse: {
+      /** Ip Address */
+      ip_address: string;
+      /** Country */
+      country: string | null;
+      /** Country Code */
+      country_code: string | null;
+      /**
+       * First Seen
+       * Format: date-time
+       */
+      first_seen: string;
+      /**
+       * Last Seen
+       * Format: date-time
+       */
+      last_seen: string;
+      /** Request Count */
+      request_count: number;
     };
     /** GenerateCodeRequest */
     GenerateCodeRequest: {
@@ -696,6 +806,16 @@ export interface components {
       activation_url?: string | null;
       /** Activation Code */
       activation_code?: string | null;
+    };
+    /** ManualBanRequest */
+    ManualBanRequest: {
+      /** Ip Address */
+      ip_address: string;
+      /**
+       * Duration Hours
+       * @default 24
+       */
+      duration_hours: number;
     };
     /**
      * MinerType
@@ -1093,6 +1213,114 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['RegistrationCodeDetailResponse'][];
+        };
+      };
+    };
+  };
+  list_banned_ips_admin_banned_ips_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BannedIPResponse'][];
+        };
+      };
+    };
+  };
+  ban_ip_admin_banned_ips_post: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ManualBanRequest'];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  unban_ip_admin_banned_ips__ip__delete: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        ip: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            [key: string]: unknown;
+          };
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['HTTPValidationError'];
+        };
+      };
+    };
+  };
+  list_connected_ips_admin_connected_ips_get: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ConnectedIPResponse'][];
         };
       };
     };
